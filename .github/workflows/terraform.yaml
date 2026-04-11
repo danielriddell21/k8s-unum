@@ -62,10 +62,11 @@ jobs:
       - name: migrate state (one-time cloudflare resource type rename)
         run: |
           if terraform state list 2>/dev/null | grep -q '^cloudflare_tunnel\.unum$'; then
-            terraform state mv cloudflare_tunnel.unum cloudflare_zero_trust_tunnel_cloudflared.unum
-          fi
-          if terraform state list 2>/dev/null | grep -q '^cloudflare_tunnel_config\.unum$'; then
-            terraform state mv cloudflare_tunnel_config.unum cloudflare_zero_trust_tunnel_cloudflared_config.unum
+            TUNNEL_ID=$(terraform state show cloudflare_tunnel.unum | awk '/^\s*id\s*=/ {gsub(/"/, "", $3); print $3; exit}')
+            terraform state rm cloudflare_tunnel.unum
+            terraform state rm cloudflare_tunnel_config.unum
+            terraform import cloudflare_zero_trust_tunnel_cloudflared.unum "${TF_VAR_cloudflare_account_id}/${TUNNEL_ID}"
+            terraform import cloudflare_zero_trust_tunnel_cloudflared_config.unum "${TF_VAR_cloudflare_account_id}/${TUNNEL_ID}"
           fi
 
       - name: plan
