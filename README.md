@@ -37,11 +37,19 @@ k8s-unum/
     deployment.yaml
     service.yaml
   cloudflared/
-    deployment.yaml       # cloudflared tunnel agent
-    configmap.yaml        # tunnel ingress routing
+    deployment.yaml       # cloudflared tunnel agent (TUNNEL_TOKEN from secret)
   argocd/
     application.yaml      # ArgoCD Application (self-referential)
+  terraform/
+    main.tf               # provider versions
+    hetzner.tf            # CX22 server + SSH key (k3s via cloud-init)
+    cloudflare.tf         # tunnel + tunnel_config + DNS CNAMEs
+    variables.tf
+    outputs.tf            # server_ip, tunnel_token (sensitive), post-apply steps
+    terraform.tfvars.example
 ```
+
+Tunnel ingress routing is managed by Terraform (`cloudflare_tunnel_config`) — not a local ConfigMap. cloudflared fetches the routing rules from the Cloudflare API using the tunnel token.
 
 ---
 
@@ -58,20 +66,38 @@ Deployments use `latest` by default. Pin to a specific `sha-` or version tag for
 
 ---
 
-## Secrets (not in this repo)
+## Provisioning with Terraform
 
-Two secrets must be created manually in the cluster before ArgoCD syncs:
+Terraform in `terraform/` provisions the Hetzner server (k3s via cloud-init) and the Cloudflare tunnel + DNS records.
 
 ```bash
-# Cloudflare tunnel token — from Zero Trust → Networks → Tunnels
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# fill in terraform.tfvars with your tokens
+terraform init
+terraform apply
+# follow the steps printed in the post_apply output
+```
+
+The `tunnel_token` output is sensitive — `terraform output -raw tunnel_token` pipes it directly into `kubectl create secret`.
+
+---
+
+## Secrets (not in this repo)
+
+One secret must be created manually (Terraform prints the exact command):
+
+```bash
 kubectl create secret generic cloudflared-token \
-  --from-literal=token=<TUNNEL_TOKEN> \
+  --from-literal=token=$(terraform output -raw tunnel_token) \
   -n unum
 ```
 
 ---
 
 ## Initial cluster setup
+
+After `terraform apply` and the secret:
 
 ```bash
 # Install ArgoCD

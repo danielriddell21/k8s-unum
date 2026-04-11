@@ -1,0 +1,6 @@
+hetzner_token         = "your-hetzner-api-token"
+ssh_public_key        = "ssh-ed25519 AAAA... your-key-comment"
+cloudflare_api_token  = "your-cloudflare-api-token"
+cloudflare_account_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+cloudflare_zone_id    = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+domain                = "unum.tools"
