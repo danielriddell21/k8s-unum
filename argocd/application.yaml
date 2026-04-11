@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/danielriddell21/k8s-unum
     targetRevision: trunk
-    path: .
+    path: manifests
     directory:
       recurse: true
   destination:

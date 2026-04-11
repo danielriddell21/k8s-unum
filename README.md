@@ -26,20 +26,21 @@ All three tools run from the same image (`ghcr.io/danielriddell21/unum`) — the
 
 ```
 k8s-unum/
-  namespace.yaml              # unum namespace
-  hash/
-    deployment.yaml
-    service.yaml
-  json/
-    deployment.yaml
-    service.yaml
-  diff/
-    deployment.yaml
-    service.yaml
-  cloudflared/
-    deployment.yaml           # cloudflared tunnel agent (TUNNEL_TOKEN from secret)
+  manifests/                  # ArgoCD watches this directory (recurse: true)
+    namespace.yaml
+    hash/
+      deployment.yaml
+      service.yaml
+    json/
+      deployment.yaml
+      service.yaml
+    diff/
+      deployment.yaml
+      service.yaml
+    cloudflared/
+      deployment.yaml         # cloudflared tunnel agent (TUNNEL_TOKEN from secret)
   argocd/
-    application.yaml          # ArgoCD Application (self-referential)
+    application.yaml          # ArgoCD Application (applied once manually, not synced)
   terraform/
     main.tf                   # providers + S3 backend
     hetzner.tf                # cx23 server + SSH key (k3s via cloud-init)
