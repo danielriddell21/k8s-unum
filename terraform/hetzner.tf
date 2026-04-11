@@ -7,7 +7,7 @@ resource "hcloud_server" "unum" {
   name        = "unum"
   server_type = "cx23"
   image       = "ubuntu-24.04"
-  location    = "fsn1"
+  location    = "nbg1"
   ssh_keys    = [hcloud_ssh_key.unum.id]
 
   user_data = <<-EOT
