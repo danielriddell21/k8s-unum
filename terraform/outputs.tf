@@ -5,7 +5,7 @@ output "server_ip" {
 
 output "tunnel_token" {
   description = "Cloudflare tunnel token — pipe into kubectl create secret after apply"
-  value       = cloudflare_tunnel.unum.tunnel_token
+  value       = cloudflare_zero_trust_tunnel_cloudflared.unum.tunnel_token
   sensitive   = true
 }
 
