@@ -32,3 +32,23 @@ status:
 # Show ArgoCD app sync status
 sync-status:
     KUBECONFIG={{ kubeconfig_path }} kubectl get applications -n argocd
+
+# Seal the cloudflared tunnel token — requires kubeseal + Sealed Secrets controller running
+# Output: manifests/cloudflared/sealed-secret.yaml (commit this, never commit a plain Secret)
+seal-secret:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd terraform
+    terraform init -backend-config=backend.hcl -reconfigure > /dev/null
+    TOKEN=$(terraform output -raw tunnel_token)
+    cd ..
+    kubectl create secret generic cloudflared-token \
+        --from-literal=token="$TOKEN" \
+        --namespace=unum \
+        --dry-run=client -o yaml | \
+        KUBECONFIG={{ kubeconfig_path }} kubeseal \
+            --controller-namespace=kube-system \
+            --controller-name=sealed-secrets \
+            --format=yaml \
+        > manifests/cloudflared/sealed-secret.yaml
+    echo "sealed secret written to manifests/cloudflared/sealed-secret.yaml — commit and push to deploy"
