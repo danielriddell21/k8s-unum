@@ -5,7 +5,7 @@ resource "hcloud_ssh_key" "unum" {
 
 resource "hcloud_server" "unum" {
   name        = "unum"
-  server_type = "cx21"
+  server_type = "cx23"
   image       = "ubuntu-24.04"
   location    = "fsn1"
   ssh_keys    = [hcloud_ssh_key.unum.id]
