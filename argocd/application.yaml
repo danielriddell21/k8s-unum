@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/danielriddell21/k8s-unum
-    targetRevision: main
+    targetRevision: trunk
     path: .
   destination:
     server: https://kubernetes.default.svc

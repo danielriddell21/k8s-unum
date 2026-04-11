@@ -7,13 +7,6 @@ on:
   pull_request:
     paths: [terraform/**]
   workflow_dispatch:
-    inputs:
-      action:
-        description: "plan or apply"
-        required: true
-        default: plan
-        type: choice
-        options: [plan, apply]
 
 permissions:
   contents: read
@@ -30,19 +23,12 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
 
 jobs:
-  terraform:
-    name: >-
-      terraform
-      ${{
-        github.event_name == 'workflow_dispatch' && inputs.action ||
-        github.event_name == 'push' && 'apply' ||
-        'plan'
-      }}
+  validate:
+    name: validate
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: terraform
-
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +36,7 @@ jobs:
         with:
           terraform_version: "~1.6"
 
-      - name: fmt check
+      - name: fmt
         run: terraform fmt -check -recursive
 
       - name: init
@@ -59,53 +45,63 @@ jobs:
       - name: validate
         run: terraform validate
 
-      - name: migrate state (one-time cloudflare resource type rename)
-        run: |
-          if terraform state list 2>/dev/null | grep -q '^cloudflare_tunnel\.unum$'; then
-            TUNNEL_ID=$(terraform state show cloudflare_tunnel.unum | awk '/^\s*id\s*=/ {gsub(/"/, "", $3); print $3; exit}')
-            terraform state rm cloudflare_tunnel.unum
-            terraform state rm cloudflare_tunnel_config.unum
-            terraform import cloudflare_zero_trust_tunnel_cloudflared.unum "${TF_VAR_cloudflare_account_id}/${TUNNEL_ID}"
-            terraform import cloudflare_zero_trust_tunnel_cloudflared_config.unum "${TF_VAR_cloudflare_account_id}/${TUNNEL_ID}"
-          fi
+  plan:
+    name: plan
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: terraform-plan
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      - name: init
+        run: terraform init -backend-config=backend.hcl
 
       - name: plan
-        id: plan
-        run: terraform plan -no-color -input=false -out=tfplan 2>&1 | tee plan.txt
-        continue-on-error: true
+        run: |
+          terraform plan -no-color -input=false -out=tfplan
+          terraform show -json tfplan > plan.json
 
-      - name: post plan to PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: summary
+        uses: ./.github/actions/tf-plan-summary
+
+      - name: upload plan
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs')
-            const raw = fs.readFileSync('terraform/plan.txt', 'utf8')
-            const plan = raw.length > 60000 ? raw.slice(0, 60000) + '\n\n[truncated]' : raw
-            const body = `<details><summary>Terraform Plan</summary>\n\n\`\`\`\n${plan}\n\`\`\`\n</details>\n\nResult: \`${{ steps.plan.outcome }}\``
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.issue.number,
-            })
-            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes('Terraform Plan'))
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                comment_id: existing.id, body,
-              })
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, body,
-              })
-            }
+          name: tfplan
+          path: terraform/tfplan
+          retention-days: 1
 
-      - name: fail on plan error
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
+  apply:
+    name: apply
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: terraform-apply
+    if: github.ref == 'refs/heads/trunk' || github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      - name: init
+        run: terraform init -backend-config=backend.hcl
+
+      - name: download plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: terraform/
 
       - name: apply
-        if: >-
-          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         run: terraform apply -auto-approve -input=false tfplan
