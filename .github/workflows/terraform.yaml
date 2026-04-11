@@ -59,6 +59,15 @@ jobs:
       - name: validate
         run: terraform validate
 
+      - name: migrate state (one-time cloudflare resource type rename)
+        run: |
+          if terraform state list 2>/dev/null | grep -q '^cloudflare_tunnel\.unum$'; then
+            terraform state mv cloudflare_tunnel.unum cloudflare_zero_trust_tunnel_cloudflared.unum
+          fi
+          if terraform state list 2>/dev/null | grep -q '^cloudflare_tunnel_config\.unum$'; then
+            terraform state mv cloudflare_tunnel_config.unum cloudflare_zero_trust_tunnel_cloudflared_config.unum
+          fi
+
       - name: plan
         id: plan
         run: terraform plan -no-color -input=false -out=tfplan 2>&1 | tee plan.txt

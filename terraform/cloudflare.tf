@@ -8,11 +8,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "unum" {
   secret     = random_bytes.tunnel_secret.base64
 }
 
-moved {
-  from = cloudflare_tunnel.unum
-  to   = cloudflare_zero_trust_tunnel_cloudflared.unum
-}
-
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "unum" {
   account_id = var.cloudflare_account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.unum.id
@@ -34,11 +29,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "unum" {
       service = "http_status:404"
     }
   }
-}
-
-moved {
-  from = cloudflare_tunnel_config.unum
-  to   = cloudflare_zero_trust_tunnel_cloudflared_config.unum
 }
 
 resource "cloudflare_record" "hash" {
