@@ -2,15 +2,20 @@ resource "random_bytes" "tunnel_secret" {
   length = 32
 }
 
-resource "cloudflare_tunnel" "unum" {
+resource "cloudflare_zero_trust_tunnel_cloudflared" "unum" {
   account_id = var.cloudflare_account_id
   name       = "unum"
   secret     = random_bytes.tunnel_secret.base64
 }
 
-resource "cloudflare_tunnel_config" "unum" {
+moved {
+  from = cloudflare_tunnel.unum
+  to   = cloudflare_zero_trust_tunnel_cloudflared.unum
+}
+
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "unum" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = cloudflare_tunnel.unum.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.unum.id
 
   config {
     ingress_rule {
@@ -31,10 +36,15 @@ resource "cloudflare_tunnel_config" "unum" {
   }
 }
 
+moved {
+  from = cloudflare_tunnel_config.unum
+  to   = cloudflare_zero_trust_tunnel_cloudflared_config.unum
+}
+
 resource "cloudflare_record" "hash" {
   zone_id = var.cloudflare_zone_id
   name    = "hash"
-  value   = "${cloudflare_tunnel.unum.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -42,7 +52,7 @@ resource "cloudflare_record" "hash" {
 resource "cloudflare_record" "json" {
   zone_id = var.cloudflare_zone_id
   name    = "json"
-  value   = "${cloudflare_tunnel.unum.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -50,7 +60,7 @@ resource "cloudflare_record" "json" {
 resource "cloudflare_record" "diff" {
   zone_id = var.cloudflare_zone_id
   name    = "diff"
-  value   = "${cloudflare_tunnel.unum.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
