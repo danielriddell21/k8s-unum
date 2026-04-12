@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unum-config
+  namespace: unum
+data:
+  config.json: |
+    {
+      "dark_theme": "cyber",
+      "light_theme": "clean"
+    }
