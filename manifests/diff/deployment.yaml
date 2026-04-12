@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: unum-diff
-          image: ghcr.io/danielriddell21/unum:v0.10.2
+          image: ghcr.io/danielriddell21/unum:v0.11.0
           args: ["diff", "--web"]
           ports:
             - containerPort: 8080
