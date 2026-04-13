@@ -33,6 +33,14 @@ status:
 sync-status:
     KUBECONFIG={{ kubeconfig_path }} kubectl get applications -n argocd
 
+# Port-forward Grafana to http://localhost:3000 (admin credentials in grafana-secret)
+grafana:
+    KUBECONFIG={{ kubeconfig_path }} kubectl port-forward svc/grafana -n unum 3000:3000
+
+# Port-forward Umami admin to http://localhost:3001
+umami:
+    KUBECONFIG={{ kubeconfig_path }} kubectl port-forward svc/umami -n unum 3001:3000
+
 # Seal the cloudflared tunnel token — requires kubeseal + Sealed Secrets controller running
 # Output: manifests/cloudflared/sealed-secret.yaml (commit this, never commit a plain Secret)
 seal-secret:

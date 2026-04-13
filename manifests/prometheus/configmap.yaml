@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: unum
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+
+    scrape_configs:
+      # unum web pods — /metrics exposed by promhttp.Handler()
+      - job_name: unum-json
+        static_configs:
+          - targets: ['unum-json:8080']
+        metrics_path: /metrics
+
+      - job_name: unum-diff
+        static_configs:
+          - targets: ['unum-diff:8080']
+        metrics_path: /metrics
+
+      - job_name: unum-hash
+        static_configs:
+          - targets: ['unum-hash:8080']
+        metrics_path: /metrics
+
+      # OTel Collector — push metrics from CLI/TUI users
+      - job_name: otel-collector
+        static_configs:
+          - targets: ['otel-collector:8889']

@@ -26,6 +26,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "unum" {
       service  = "http://unum-diff:8080"
     }
     ingress_rule {
+      hostname = "otel.${var.domain}"
+      service  = "http://otel-collector:4318"
+    }
+    ingress_rule {
       service = "http_status:404"
     }
   }
@@ -50,6 +54,14 @@ resource "cloudflare_record" "json" {
 resource "cloudflare_record" "diff" {
   zone_id = var.cloudflare_zone_id
   name    = "diff"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = true
+}
+
+resource "cloudflare_record" "otel" {
+  zone_id = var.cloudflare_zone_id
+  name    = "otel"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true

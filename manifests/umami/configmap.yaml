@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: umami-config
+  namespace: unum
+data:
+  # Set this to the Website ID from Umami admin after first login.
+  # Access Umami: kubectl port-forward svc/umami 3000:3000 -n unum
+  # Then: http://localhost:3000 — Settings → Websites → Add website → copy ID
+  website_id: "replace-with-umami-website-id"

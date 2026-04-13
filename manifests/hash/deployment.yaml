@@ -25,6 +25,21 @@ spec:
               value: "8080"
             - name: XDG_CONFIG_HOME
               value: /etc
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4319"
+            - name: OTEL_SERVICE_NAME
+              value: "unum-hash"
+            - name: UNUM_ENV
+              value: "production"
+            - name: UMAMI_URL
+              value: "http://umami:3000"
+            - name: UMAMI_WEBSITE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: umami-config
+                  key: website_id
+            - name: UMAMI_HOSTNAME
+              value: "hash.riddellious.dev"
           volumeMounts:
             - name: unum-config
               mountPath: /etc/unum
