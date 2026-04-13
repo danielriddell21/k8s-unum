@@ -4,7 +4,6 @@ metadata:
   name: umami-config
   namespace: unum
 data:
-  # Set this to the Website ID from Umami admin after first login.
-  # Access Umami: kubectl port-forward svc/umami 3000:3000 -n unum
-  # Then: http://localhost:3000 — Settings → Websites → Add website → copy ID
-  website_id: "replace-with-umami-website-id"
+  json_website_id: "ece07fbe-fce4-45d0-8b69-987412f9088b"
+  diff_website_id: "46669571-ac1a-4923-81af-fd1b33352a11"
+  hash_website_id: "36aa73d5-0202-454c-ab53-b1188ae0e65a"

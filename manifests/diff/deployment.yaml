@@ -37,7 +37,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: umami-config
-                  key: website_id
+                  key: diff_website_id
             - name: UMAMI_HOSTNAME
               value: "diff.riddellious.dev"
           volumeMounts:
