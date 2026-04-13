@@ -38,9 +38,11 @@ data:
         limit_mib: 200
 
     exporters:
-      # Traces → stdout (visible via kubectl logs). Add Tempo later for persistent storage.
-      debug:
-        verbosity: normal
+      # Traces → Tempo (persistent trace storage, queryable via Grafana).
+      otlp/tempo:
+        endpoint: tempo:4317
+        tls:
+          insecure: true
       # Metrics → Prometheus scrape endpoint (Prometheus pulls from :8889).
       prometheus:
         endpoint: 0.0.0.0:8889
@@ -51,7 +53,7 @@ data:
         traces:
           receivers: [otlp/external, otlp/internal]
           processors: [memory_limiter, batch]
-          exporters: [debug]
+          exporters: [otlp/tempo]
         metrics:
           receivers: [otlp/external, otlp/internal]
           processors: [memory_limiter, batch]
