@@ -1,9 +1,10 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: grafana
   namespace: unum
 spec:
+  serviceName: grafana
   replicas: 1
   revisionHistoryLimit: 2
   selector:
@@ -33,6 +34,8 @@ spec:
             - name: config
               mountPath: /etc/grafana/provisioning/datasources
               readOnly: true
+            - name: data
+              mountPath: /var/lib/grafana
           resources:
             requests:
               cpu: 25m
@@ -50,3 +53,12 @@ spec:
         - name: config
           configMap:
             name: grafana-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
