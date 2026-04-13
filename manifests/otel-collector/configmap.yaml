@@ -20,7 +20,6 @@ data:
             endpoint: 0.0.0.0:4318
             auth:
               authenticator: bearertokenauth
-            max_recv_msg_size_mib: 4
 
       # Internal: in-cluster unum pods use this directly (no auth needed).
       otlp/internal:
@@ -39,17 +38,9 @@ data:
         limit_mib: 200
 
     exporters:
-      # Traces → Loki (structured event log streams per service/tool/mode).
-      loki:
-        endpoint: http://loki:3100/loki/api/v1/push
-        default_labels_enabled:
-          exporter: false
-          job: true
-        labels:
-          attributes:
-            service.name: "service_name"
-            tool: "tool"
-            mode: "mode"
+      # Traces → stdout (visible via kubectl logs). Add Tempo later for persistent storage.
+      debug:
+        verbosity: normal
       # Metrics → Prometheus scrape endpoint (Prometheus pulls from :8889).
       prometheus:
         endpoint: 0.0.0.0:8889
@@ -60,7 +51,7 @@ data:
         traces:
           receivers: [otlp/external, otlp/internal]
           processors: [memory_limiter, batch]
-          exporters: [loki]
+          exporters: [debug]
         metrics:
           receivers: [otlp/external, otlp/internal]
           processors: [memory_limiter, batch]
