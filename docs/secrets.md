@@ -15,98 +15,44 @@ All secrets use [Bitnami Sealed Secrets](https://github.com/bitnami-labs/sealed-
    go install github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main
    ```
 
-## How to create or rotate a secret
+3. Fetch the kubeconfig:
+   ```bash
+   just kubeconfig
+   ```
+
+## Creating or rotating secrets
 
 ```bash
-# 1. Create the plain Secret locally — never commit this file
-kubectl create secret generic <name> \
-  --namespace unum \
-  --from-literal=<key>=<value> \
-  --dry-run=client -o yaml > /tmp/secret.yaml
-
-# 2. Seal it
-kubeseal --format yaml < /tmp/secret.yaml > manifests/<dir>/sealed-secret.yaml
-
-# 3. Remove the plain file
-rm /tmp/secret.yaml
-
-# 4. Commit the sealed file
-git add manifests/<dir>/sealed-secret.yaml && git commit
+just seal-secrets
 ```
 
----
+Interactive menu — select which secret to create or rotate. Passwords and tokens are auto-generated. The script writes the sealed YAML to `manifests/<service>/sealed-secret.yaml` — commit and push to deploy.
 
-## cloudflared-secret
-
-Used by: `manifests/cloudflared/deployment.yaml`
-
-```bash
-just seal-secret   # reads tunnel token from Terraform state, writes sealed-secret.yaml
+```
+k8s-unum secret manager
+========================
+1) cloudflared      tunnel token (reads from Terraform state)
+2) postgres         database password (auto-generated)
+3) umami            database-url + app-secret
+4) otel-collector   auth token (auto-generated, copy to GitHub Actions)
+5) grafana          admin password (auto-generated)
+6) all              create all secrets in order
+7) quit
 ```
 
----
+### Notes
 
-## postgres-secret
+- **postgres → umami dependency**: if creating umami standalone, you'll be prompted for the postgres password. If you run `all`, the script reuses the generated postgres password automatically.
+- **otel-collector auth-token**: the value printed by the script must also be added as the `OTEL_AUTH_TOKEN` GitHub Actions secret so GoReleaser can bake it into release binaries.
+- **Grafana admin password**: printed once — save it or retrieve it later with `kubectl -n unum get secret grafana-secret -o jsonpath='{.data.admin-password}' | base64 -d`.
 
-Used by: `manifests/postgres/statefulset.yaml`
+## After Umami is running
 
-```bash
-kubectl create secret generic postgres-secret \
-  --namespace unum \
-  --from-literal=password=<strong-random-password> \
-  --dry-run=client -o yaml > /tmp/secret.yaml
-kubeseal --format yaml < /tmp/secret.yaml > manifests/postgres/sealed-secret.yaml
-rm /tmp/secret.yaml
+Log in via `just umami` → http://localhost:3001, create a website, copy the UUID, and update `manifests/umami/configmap.yaml`:
+
+```yaml
+data:
+  website_id: "<paste-uuid-here>"
 ```
 
----
-
-## umami-secret
-
-Used by: `manifests/umami/deployment.yaml`
-
-```bash
-kubectl create secret generic umami-secret \
-  --namespace unum \
-  --from-literal=database-url="postgresql://umami:<postgres-password>@postgres:5432/umami" \
-  --from-literal=app-secret=<random-64-char-string> \
-  --dry-run=client -o yaml > /tmp/secret.yaml
-kubeseal --format yaml < /tmp/secret.yaml > manifests/umami/sealed-secret.yaml
-rm /tmp/secret.yaml
-```
-
-After Umami is running, log in (`just umami`), create a website, and update `website_id` in `manifests/umami/configmap.yaml`.
-
----
-
-## otel-collector-secret
-
-Used by: `manifests/otel-collector/deployment.yaml`
-
-The `auth-token` value must match the `OTEL_AUTH_TOKEN` GitHub Actions secret (injected into unum release binaries via GoReleaser ldflags).
-
-```bash
-kubectl create secret generic otel-collector-secret \
-  --namespace unum \
-  --from-literal=auth-token=<strong-random-token> \
-  --dry-run=client -o yaml > /tmp/secret.yaml
-kubeseal --format yaml < /tmp/secret.yaml > manifests/otel-collector/sealed-secret.yaml
-rm /tmp/secret.yaml
-```
-
----
-
-## grafana-secret
-
-Used by: `manifests/grafana/deployment.yaml`
-
-```bash
-kubectl create secret generic grafana-secret \
-  --namespace unum \
-  --from-literal=admin-password=<strong-password> \
-  --dry-run=client -o yaml > /tmp/secret.yaml
-kubeseal --format yaml < /tmp/secret.yaml > manifests/grafana/sealed-secret.yaml
-rm /tmp/secret.yaml
-```
-
-Access Grafana: `just grafana` → http://localhost:3000
+Commit and push.

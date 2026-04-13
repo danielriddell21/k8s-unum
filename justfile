@@ -41,22 +41,6 @@ grafana:
 umami:
     KUBECONFIG={{ kubeconfig_path }} kubectl port-forward svc/umami -n unum 3001:3000
 
-# Seal the cloudflared tunnel token — requires kubeseal + Sealed Secrets controller running
-# Output: manifests/cloudflared/sealed-secret.yaml (commit this, never commit a plain Secret)
-seal-secret:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd terraform
-    terraform init -backend-config=backend.hcl -reconfigure > /dev/null
-    TOKEN=$(terraform output -raw tunnel_token)
-    cd ..
-    kubectl create secret generic cloudflared-token \
-        --from-literal=token="$TOKEN" \
-        --namespace=unum \
-        --dry-run=client -o yaml | \
-        KUBECONFIG={{ kubeconfig_path }} kubeseal \
-            --controller-namespace=kube-system \
-            --controller-name=sealed-secrets \
-            --format=yaml \
-        > manifests/cloudflared/sealed-secret.yaml
-    echo "sealed secret written to manifests/cloudflared/sealed-secret.yaml — commit and push to deploy"
+# Create or rotate any sealed secret — interactive menu (requires kubeseal + cluster access)
+seal-secrets:
+    bash scripts/seal-secrets.sh
