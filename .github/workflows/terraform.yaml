@@ -69,7 +69,9 @@ jobs:
           terraform show -json tfplan > plan.json
 
       - name: summary
-        uses: ./.github/actions/tf-plan-summary
+        uses: danielriddell21/tf-plan-summary-action@v1
+        with:
+          plan-file: terraform/plan.json
 
       - name: upload plan
         uses: actions/upload-artifact@v4
