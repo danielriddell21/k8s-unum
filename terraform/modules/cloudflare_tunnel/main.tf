@@ -39,10 +39,12 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "this" {
   }
 }
 
+# Key on the subdomain label so moved blocks can reference records by a
+# static key (terraform forbids template interpolation in moved-block keys).
 resource "cloudflare_record" "this" {
-  for_each = { for r in var.ingress_rules : r.hostname => r }
+  for_each = { for r in var.ingress_rules : split(".", r.hostname)[0] => r }
   zone_id  = var.zone_id
-  name     = split(".", each.value.hostname)[0]
+  name     = each.key
   content  = "${cloudflare_zero_trust_tunnel_cloudflared.this.id}.cfargotunnel.com"
   type     = "CNAME"
   proxied  = true

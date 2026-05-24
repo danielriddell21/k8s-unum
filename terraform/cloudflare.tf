@@ -40,24 +40,24 @@ moved {
 }
 moved {
   from = cloudflare_record.hash
-  to   = module.tunnel_unum.cloudflare_record.this["hash.${var.domain}"]
+  to   = module.tunnel_unum.cloudflare_record.this["hash"]
 }
 moved {
   from = cloudflare_record.json
-  to   = module.tunnel_unum.cloudflare_record.this["json.${var.domain}"]
+  to   = module.tunnel_unum.cloudflare_record.this["json"]
 }
 moved {
   from = cloudflare_record.diff
-  to   = module.tunnel_unum.cloudflare_record.this["diff.${var.domain}"]
+  to   = module.tunnel_unum.cloudflare_record.this["diff"]
 }
 moved {
   from = cloudflare_record.otel
-  to   = module.tunnel_unum.cloudflare_record.this["otel.${var.domain}"]
+  to   = module.tunnel_unum.cloudflare_record.this["otel"]
 }
 
 # kosmos was created on the unum tunnel; migrate it to the fiatlux tunnel.
 # The CNAME content will update in-place to point at the new tunnel ID.
 moved {
   from = cloudflare_record.kosmos
-  to   = module.tunnel_fiatlux.cloudflare_record.this["kosmos.${var.domain}"]
+  to   = module.tunnel_fiatlux.cloudflare_record.this["kosmos"]
 }
