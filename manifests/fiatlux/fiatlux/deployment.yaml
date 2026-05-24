@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fiatlux
+  namespace: fiatlux
+  labels:
+    app: fiatlux
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: fiatlux
+  template:
+    metadata:
+      labels:
+        app: fiatlux
+    spec:
+      initContainers:
+        # Pull the Ollama model once. Subsequent restarts reuse the
+        # cached layers via the ollama-models PVC.
+        - name: ollama-pull
+          image: ollama/ollama:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              ollama serve &
+              PID=$!
+              for i in 1 2 3 4 5 6 7 8 9 10; do
+                if ollama list >/dev/null 2>&1; then break; fi
+                sleep 1
+              done
+              ollama pull gemma4
+              kill $PID
+              wait $PID || true
+          env:
+            - name: OLLAMA_MODELS
+              value: /root/.ollama/models
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /root/.ollama
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          env:
+            - name: OLLAMA_MODELS
+              value: /root/.ollama/models
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+          ports:
+            - name: ollama
+              containerPort: 11434
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /root/.ollama
+          readinessProbe:
+            tcpSocket:
+              port: ollama
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "1"
+            limits:
+              memory: "5Gi"
+              cpu: "3"
+
+        - name: fiatlux
+          image: ghcr.io/danielriddell21/fiat-lux:trunk
+          imagePullPolicy: Always
+          args:
+            - "serve"
+            - "--config=/etc/fiatlux/config.yaml"
+            - "--db=http://sqld-svc:8080"
+            - "--web-addr=:8080"
+            - "--tick=10s"
+            - "--save-mode=interval:30s"
+          ports:
+            - name: web
+              containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /etc/fiatlux
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/state
+              port: web
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/state
+              port: web
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+
+      volumes:
+        - name: ollama-models
+          persistentVolumeClaim:
+            claimName: ollama-models
+        - name: config
+          configMap:
+            name: fiatlux-config

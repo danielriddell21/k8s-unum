@@ -1,6 +1,6 @@
 # Terraform
 
-Terraform provisions the Hetzner server and the Cloudflare Tunnel (unum namespace) via the `cloudflare_tunnel` module. State is stored in Cloudflare R2.
+Terraform provisions the Hetzner server and two Cloudflare Tunnels (one per namespace) via the `cloudflare_tunnel` module. State is stored in Cloudflare R2.
 
 ## Initial setup
 
@@ -12,7 +12,7 @@ terraform init -backend-config=backend.hcl
 terraform apply
 ```
 
-The `unum_tunnel_token` output is sensitive — managed via Sealed Secrets so it can be committed safely. See [secrets.md](secrets.md).
+The `unum_tunnel_token` and `fiatlux_tunnel_token` outputs are sensitive — managed via Sealed Secrets so they can be committed safely. See [secrets.md](secrets.md).
 
 ## R2 state backend
 

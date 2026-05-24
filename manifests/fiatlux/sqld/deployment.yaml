@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqld
+  namespace: fiatlux
+  labels:
+    app: sqld
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: sqld
+  template:
+    metadata:
+      labels:
+        app: sqld
+    spec:
+      containers:
+        - name: sqld
+          image: ghcr.io/tursodatabase/libsql-server:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SQLD_NODE
+              value: "primary"
+            - name: SQLD_HTTP_LISTEN_ADDR
+              value: "0.0.0.0:8080"
+            - name: SQLD_DB_PATH
+              value: "/var/lib/sqld/kosmos.db"
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/sqld
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: sqld-data

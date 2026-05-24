@@ -47,11 +47,19 @@ tf_output() {
     popd > /dev/null
 }
 
-seal_cloudflared() {
-    echo "→ cloudflared-token"
+seal_cloudflared_unum() {
+    echo "→ cloudflared-token (unum)"
     local token
     token=$(tf_output unum_tunnel_token)
     seal unum cloudflared-token unum/cloudflared \
+        --from-literal="token=$token"
+}
+
+seal_cloudflared_fiatlux() {
+    echo "→ cloudflared-token (fiatlux)"
+    local token
+    token=$(tf_output fiatlux_tunnel_token)
+    seal fiatlux cloudflared-token fiatlux/cloudflared \
         --from-literal="token=$token"
 }
 
@@ -108,31 +116,34 @@ echo "KUBECONFIG: $KUBECONFIG_PATH"
 echo ""
 
 options=(
-    "cloudflared         unum tunnel token (reads from Terraform state)"
-    "postgres            database password (auto-generated)"
-    "umami               database-url + app-secret"
-    "otel-collector      auth token (auto-generated, copy to GitHub Actions)"
-    "grafana             admin password (auto-generated)"
-    "all                 create all secrets in order"
+    "cloudflared-unum     unum tunnel token (reads from Terraform state)"
+    "cloudflared-fiatlux  fiatlux tunnel token (reads from Terraform state)"
+    "postgres             database password (auto-generated)"
+    "umami                database-url + app-secret"
+    "otel-collector       auth token (auto-generated, copy to GitHub Actions)"
+    "grafana              admin password (auto-generated)"
+    "all                  create all secrets in order"
     "quit"
 )
 
 PS3=$'\nSelect secret to create/rotate: '
 select opt in "${options[@]}"; do
     case "$REPLY" in
-        1) seal_cloudflared ;;
-        2) seal_postgres ;;
-        3) seal_umami ;;
-        4) seal_otel ;;
-        5) seal_grafana ;;
-        6)
-            seal_cloudflared
+        1) seal_cloudflared_unum ;;
+        2) seal_cloudflared_fiatlux ;;
+        3) seal_postgres ;;
+        4) seal_umami ;;
+        5) seal_otel ;;
+        6) seal_grafana ;;
+        7)
+            seal_cloudflared_unum
+            seal_cloudflared_fiatlux
             seal_postgres
             seal_umami
             seal_otel
             seal_grafana
             ;;
-        7) echo "bye"; exit 0 ;;
+        8) echo "bye"; exit 0 ;;
         *) echo "invalid selection — try again"; continue ;;
     esac
     break

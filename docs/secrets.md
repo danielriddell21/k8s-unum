@@ -31,13 +31,14 @@ Interactive menu — select which secret to create or rotate. Passwords and toke
 ```
 k8s-unum secret manager
 ========================
-1) cloudflared      unum tunnel token (reads from Terraform state)
-2) postgres         database password (auto-generated)
-3) umami            database-url + app-secret
-4) otel-collector   auth token (auto-generated, copy to GitHub Actions)
-5) grafana          admin password (auto-generated)
-6) all              create all secrets in order
-7) quit
+1) cloudflared-unum     unum tunnel token (reads from Terraform state)
+2) cloudflared-fiatlux  fiatlux tunnel token (reads from Terraform state)
+3) postgres             database password (auto-generated)
+4) umami                database-url + app-secret
+5) otel-collector       auth token (auto-generated, copy to GitHub Actions)
+6) grafana              admin password (auto-generated)
+7) all                  create all secrets in order
+8) quit
 ```
 
 ### Notes

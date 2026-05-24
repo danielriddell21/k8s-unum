@@ -12,6 +12,17 @@ module "tunnel_unum" {
   ]
 }
 
+module "tunnel_fiatlux" {
+  source     = "./modules/cloudflare_tunnel"
+  name       = "fiatlux"
+  account_id = var.cloudflare_account_id
+  zone_id    = var.cloudflare_zone_id
+
+  ingress_rules = [
+    { hostname = "kosmos.${var.domain}", service = "http://fiatlux-svc:80" },
+  ]
+}
+
 # Preserve the existing unum tunnel + DNS records under the new module address.
 # Without these, terraform would destroy & recreate the tunnel, invalidating
 # the sealed cloudflared-token secret already in the cluster.
@@ -42,4 +53,11 @@ moved {
 moved {
   from = cloudflare_record.otel
   to   = module.tunnel_unum.cloudflare_record.this["otel.${var.domain}"]
+}
+
+# kosmos was created on the unum tunnel; migrate it to the fiatlux tunnel.
+# The CNAME content will update in-place to point at the new tunnel ID.
+moved {
+  from = cloudflare_record.kosmos
+  to   = module.tunnel_fiatlux.cloudflare_record.this["kosmos.${var.domain}"]
 }
