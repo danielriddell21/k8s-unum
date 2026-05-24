@@ -26,12 +26,12 @@ All secrets use [Bitnami Sealed Secrets](https://github.com/bitnami-labs/sealed-
 just seal-secrets
 ```
 
-Interactive menu — select which secret to create or rotate. Passwords and tokens are auto-generated. The script writes the sealed YAML to `manifests/<service>/sealed-secret.yaml` — commit and push to deploy.
+Interactive menu — select which secret to create or rotate. Passwords and tokens are auto-generated. The script writes the sealed YAML to `manifests/<namespace>/<service>/sealed-secret.yaml` — commit and push to deploy.
 
 ```
 k8s-unum secret manager
 ========================
-1) cloudflared      tunnel token (reads from Terraform state)
+1) cloudflared      unum tunnel token (reads from Terraform state)
 2) postgres         database password (auto-generated)
 3) umami            database-url + app-secret
 4) otel-collector   auth token (auto-generated, copy to GitHub Actions)
@@ -48,7 +48,7 @@ k8s-unum secret manager
 
 ## After Umami is running
 
-Log in via `just umami` → http://localhost:3001, create a website, copy the UUID, and update `manifests/umami/configmap.yaml`:
+Log in via `just umami` → http://localhost:3001, create a website, copy the UUID, and update `manifests/unum/umami/configmap.yaml`:
 
 ```yaml
 data:

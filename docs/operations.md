@@ -10,7 +10,7 @@ just argocd           # port-forward ArgoCD to https://localhost:9090
 just argocd-password  # print ArgoCD admin password
 just status           # pod status in unum namespace
 just sync-status      # ArgoCD app sync state
-just seal-secret      # re-seal cloudflared token (reads terraform state, writes sealed-secret.yaml)
+just seal-secrets     # re-seal any token via interactive menu (reads terraform state)
 just grafana          # port-forward Grafana to http://localhost:3000
 just umami            # port-forward Umami admin to http://localhost:3001
 ```
@@ -23,7 +23,7 @@ Push to `trunk` — ArgoCD auto-syncs within ~3 minutes. To force an immediate s
 argocd app sync unum
 ```
 
-To pin to a specific image tag, edit the `image:` field in the relevant `manifests/<tool>/deployment.yaml` and push.
+To pin to a specific image tag, edit the `image:` field in the relevant `manifests/unum/<tool>/deployment.yaml` and push.
 
 ## Observability access
 

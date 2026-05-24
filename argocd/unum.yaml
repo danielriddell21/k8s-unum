@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/danielriddell21/k8s-unum
+    repoURL: https://github.com/danielriddell21/riddellious-dev
     targetRevision: trunk
-    path: manifests
+    path: manifests/unum
     directory:
       recurse: true
   destination:

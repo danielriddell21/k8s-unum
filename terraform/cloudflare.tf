@@ -1,68 +1,45 @@
-resource "random_bytes" "tunnel_secret" {
-  length = 32
-}
-
-resource "cloudflare_zero_trust_tunnel_cloudflared" "unum" {
-  account_id = var.cloudflare_account_id
+module "tunnel_unum" {
+  source     = "./modules/cloudflare_tunnel"
   name       = "unum"
-  secret     = random_bytes.tunnel_secret.base64
-}
-
-resource "cloudflare_zero_trust_tunnel_cloudflared_config" "unum" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.unum.id
+  zone_id    = var.cloudflare_zone_id
 
-  config {
-    ingress_rule {
-      hostname = "hash.${var.domain}"
-      service  = "http://unum-hash:8080"
-    }
-    ingress_rule {
-      hostname = "json.${var.domain}"
-      service  = "http://unum-json:8080"
-    }
-    ingress_rule {
-      hostname = "diff.${var.domain}"
-      service  = "http://unum-diff:8080"
-    }
-    ingress_rule {
-      hostname = "otel.${var.domain}"
-      service  = "http://otel-collector:4318"
-    }
-    ingress_rule {
-      service = "http_status:404"
-    }
-  }
+  ingress_rules = [
+    { hostname = "hash.${var.domain}", service = "http://unum-hash:8080" },
+    { hostname = "json.${var.domain}", service = "http://unum-json:8080" },
+    { hostname = "diff.${var.domain}", service = "http://unum-diff:8080" },
+    { hostname = "otel.${var.domain}", service = "http://otel-collector:4318" },
+  ]
 }
 
-resource "cloudflare_record" "hash" {
-  zone_id = var.cloudflare_zone_id
-  name    = "hash"
-  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
-  type    = "CNAME"
-  proxied = true
+# Preserve the existing unum tunnel + DNS records under the new module address.
+# Without these, terraform would destroy & recreate the tunnel, invalidating
+# the sealed cloudflared-token secret already in the cluster.
+moved {
+  from = random_bytes.tunnel_secret
+  to   = module.tunnel_unum.random_bytes.tunnel_secret
 }
-
-resource "cloudflare_record" "json" {
-  zone_id = var.cloudflare_zone_id
-  name    = "json"
-  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
-  type    = "CNAME"
-  proxied = true
+moved {
+  from = cloudflare_zero_trust_tunnel_cloudflared.unum
+  to   = module.tunnel_unum.cloudflare_zero_trust_tunnel_cloudflared.this
 }
-
-resource "cloudflare_record" "diff" {
-  zone_id = var.cloudflare_zone_id
-  name    = "diff"
-  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
-  type    = "CNAME"
-  proxied = true
+moved {
+  from = cloudflare_zero_trust_tunnel_cloudflared_config.unum
+  to   = module.tunnel_unum.cloudflare_zero_trust_tunnel_cloudflared_config.this
 }
-
-resource "cloudflare_record" "otel" {
-  zone_id = var.cloudflare_zone_id
-  name    = "otel"
-  content = "${cloudflare_zero_trust_tunnel_cloudflared.unum.id}.cfargotunnel.com"
-  type    = "CNAME"
-  proxied = true
+moved {
+  from = cloudflare_record.hash
+  to   = module.tunnel_unum.cloudflare_record.this["hash.${var.domain}"]
+}
+moved {
+  from = cloudflare_record.json
+  to   = module.tunnel_unum.cloudflare_record.this["json.${var.domain}"]
+}
+moved {
+  from = cloudflare_record.diff
+  to   = module.tunnel_unum.cloudflare_record.this["diff.${var.domain}"]
+}
+moved {
+  from = cloudflare_record.otel
+  to   = module.tunnel_unum.cloudflare_record.this["otel.${var.domain}"]
 }
