@@ -1,4 +1,4 @@
-# k8s-unum
+# riddellious-dev
 
 Manifests for [unum](https://github.com/danielriddell21/unum) and the [fiat-lux](https://github.com/danielriddell21/fiat-lux) simulator, deployed on Hetzner k3s via ArgoCD and fronted by a Cloudflare Tunnel.
 
