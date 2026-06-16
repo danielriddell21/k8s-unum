@@ -1,25 +1,19 @@
 # k8s-unum
 
-Kubernetes manifests for [unum](https://github.com/danielriddell21/unum) — deployed on Hetzner Cloud (Nuremberg) via ArgoCD, with public access via Cloudflare Tunnels.
-
-```
-Internet → Cloudflare DNS + WAF → Cloudflare Tunnel → cloudflared pod → unum pods
-                                                                       → otel-collector (bearer auth)
-Hetzner k3s (Nuremberg) ← ArgoCD watches manifests/ on trunk
-```
+Manifests for [unum](https://github.com/danielriddell21/unum) and the [fiat-lux](https://github.com/danielriddell21/fiat-lux) simulator, deployed on Hetzner k3s via ArgoCD and fronted by a Cloudflare Tunnel.
 
 ## Docs
 
-- [Architecture & structure](docs/architecture.md)
-- [Terraform — provisioning, CI, GitHub secrets](docs/terraform.md)
-- [Secrets — kubeseal setup and per-service commands](docs/secrets.md)
-- [Operations — cluster access, deployments, observability](docs/operations.md)
+- [Architecture](docs/architecture.md)
+- [Terraform](docs/terraform.md)
+- [Secrets](docs/secrets.md)
+- [Operations](docs/operations.md)
 
 ## Quick start
 
 ```bash
-just kubeconfig   # fetch kubeconfig from Hetzner server
-just status       # check pod health
-just argocd       # open ArgoCD at https://localhost:9090
-just grafana      # open Grafana at http://localhost:3000
+just kubeconfig   # fetch kubeconfig
+just status       # pod health
+just argocd       # https://localhost:9090
+just grafana      # http://localhost:3000
 ```

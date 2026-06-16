@@ -3,9 +3,15 @@ output "server_ip" {
   value       = hcloud_server.unum.ipv4_address
 }
 
-output "tunnel_token" {
-  description = "Cloudflare tunnel token — pipe into kubectl create secret after apply"
-  value       = cloudflare_zero_trust_tunnel_cloudflared.unum.tunnel_token
+output "unum_tunnel_token" {
+  description = "Cloudflare tunnel token for the unum namespace — seal into manifests/unum/cloudflared/sealed-secret.yaml"
+  value       = module.tunnel_unum.tunnel_token
+  sensitive   = true
+}
+
+output "fiatlux_tunnel_token" {
+  description = "Cloudflare tunnel token for the fiatlux namespace — seal into manifests/fiatlux/cloudflared/sealed-secret.yaml"
+  value       = module.tunnel_fiatlux.tunnel_token
   sensitive   = true
 }
 
@@ -24,18 +30,25 @@ output "post_apply" {
          sed -i 's/127.0.0.1/${hcloud_server.unum.ipv4_address}/' ~/.kube/hetzner-unum.yaml
          export KUBECONFIG=~/.kube/hetzner-unum.yaml
 
-    3. Create namespace and tunnel secret:
-         kubectl create namespace unum
-         kubectl create secret generic cloudflared-token \
-           --from-literal=token=$(terraform output -raw tunnel_token) \
-           -n unum
-
-    4. Install ArgoCD:
+    3. Install ArgoCD + Sealed Secrets controller:
          kubectl create namespace argocd
          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+         kubectl apply -f ../argocd/sealed-secrets.yaml
 
-    5. Apply ArgoCD Application (syncs everything else automatically):
-         kubectl apply -f ../argocd/application.yaml
+    4. Seal both cloudflared tunnel tokens before ArgoCD touches them
+       (the committed sealed-secret.yaml files start as placeholders; if
+       ArgoCD syncs them as-is the SealedSecret controller can't decrypt
+       and the cloudflared pods CrashLoop with secret-not-found):
+         just seal-secrets   # → option 1 (cloudflared-unum)
+         just seal-secrets   # → option 2 (cloudflared-fiatlux)
+         git add manifests/unum/cloudflared/sealed-secret.yaml \
+                 manifests/fiatlux/cloudflared/sealed-secret.yaml
+         git commit -m "seal: cloudflared tokens"
+         git push
+
+    5. Apply ArgoCD Applications (syncs both namespaces automatically):
+         kubectl apply -f ../argocd/unum.yaml
+         kubectl apply -f ../argocd/fiatlux.yaml
 
     6. Get ArgoCD initial password:
          kubectl -n argocd get secret argocd-initial-admin-secret \

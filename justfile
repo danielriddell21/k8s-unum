@@ -25,9 +25,10 @@ argocd-password:
     KUBECONFIG={{ kubeconfig_path }} kubectl -n argocd get secret argocd-initial-admin-secret \
         -o jsonpath="{.data.password}" | base64 -d && echo
 
-# Show status of all unum pods
+# Show status of pods in unum and fiatlux namespaces
 status:
     KUBECONFIG={{ kubeconfig_path }} kubectl get pods -n unum
+    KUBECONFIG={{ kubeconfig_path }} kubectl get pods -n fiatlux
 
 # Show ArgoCD app sync status
 sync-status:

@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: unum
+  name: fiatlux
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/danielriddell21/k8s-unum
+    repoURL: https://github.com/danielriddell21/riddellious-dev
     targetRevision: trunk
-    path: manifests
+    path: manifests/fiatlux
     directory:
       recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: unum
+    namespace: fiatlux
   syncPolicy:
     automated:
       prune: true

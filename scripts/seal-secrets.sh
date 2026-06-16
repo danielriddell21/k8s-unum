@@ -21,12 +21,12 @@ check_deps() {
 rand_password() { openssl rand -base64 32 | tr -d '\n='; }
 rand_token()    { openssl rand -hex 32; }
 
-# seal <secret-name> <manifests-subdir> [--from-literal=k=v ...]
+# seal <namespace> <secret-name> <manifests-subdir> [--from-literal=k=v ...]
 seal() {
-    local name="$1" dir="$2"
-    shift 2
+    local namespace="$1" name="$2" dir="$3"
+    shift 3
     kubectl create secret generic "$name" \
-        --namespace unum \
+        --namespace "$namespace" \
         "$@" \
         --dry-run=client -o yaml | \
         KUBECONFIG="$KUBECONFIG_PATH" kubeseal \
@@ -39,21 +39,34 @@ seal() {
 
 # ── per-secret functions ──────────────────────────────────────────────────────
 
-seal_cloudflared() {
-    echo "→ cloudflared-secret"
+# tf_output <output-name> — read a value from the terraform state in ../terraform
+tf_output() {
     pushd "$REPO_ROOT/terraform" > /dev/null
     terraform init -backend-config=backend.hcl -reconfigure > /dev/null
-    local token
-    token=$(terraform output -raw tunnel_token)
+    terraform output -raw "$1"
     popd > /dev/null
-    seal cloudflared-token cloudflared \
+}
+
+seal_cloudflared_unum() {
+    echo "→ cloudflared-token (unum)"
+    local token
+    token=$(tf_output unum_tunnel_token)
+    seal unum cloudflared-token unum/cloudflared \
+        --from-literal="token=$token"
+}
+
+seal_cloudflared_fiatlux() {
+    echo "→ cloudflared-token (fiatlux)"
+    local token
+    token=$(tf_output fiatlux_tunnel_token)
+    seal fiatlux cloudflared-token fiatlux/cloudflared \
         --from-literal="token=$token"
 }
 
 seal_postgres() {
     echo "→ postgres-secret"
     POSTGRES_PASSWORD=$(rand_password)
-    seal postgres-secret postgres \
+    seal unum postgres-secret unum/postgres \
         --from-literal="password=$POSTGRES_PASSWORD"
     echo "  password: $POSTGRES_PASSWORD"
     echo "  (copy this — you will need it when creating umami-secret)"
@@ -68,7 +81,7 @@ seal_umami() {
     fi
     local app_secret
     app_secret=$(rand_token)
-    seal umami-secret umami \
+    seal unum umami-secret unum/umami \
         --from-literal="database-url=postgresql://umami:${pg_pass}@postgres:5432/umami" \
         --from-literal="app-secret=$app_secret"
 }
@@ -77,7 +90,7 @@ seal_otel() {
     echo "→ otel-collector-secret"
     local token
     token=$(rand_token)
-    seal otel-collector-secret otel-collector \
+    seal unum otel-collector-secret unum/otel-collector \
         --from-literal="auth-token=$token"
     echo "  auth-token: $token"
     echo "  (add this value to GitHub Actions secret: OTEL_AUTH_TOKEN)"
@@ -87,7 +100,7 @@ seal_grafana() {
     echo "→ grafana-secret"
     local password
     password=$(rand_password)
-    seal grafana-secret grafana \
+    seal unum grafana-secret unum/grafana \
         --from-literal="admin-password=$password"
     echo "  admin-password: $password"
 }
@@ -103,31 +116,34 @@ echo "KUBECONFIG: $KUBECONFIG_PATH"
 echo ""
 
 options=(
-    "cloudflared      tunnel token (reads from Terraform state)"
-    "postgres         database password (auto-generated)"
-    "umami            database-url + app-secret"
-    "otel-collector   auth token (auto-generated, copy to GitHub Actions)"
-    "grafana          admin password (auto-generated)"
-    "all              create all secrets in order"
+    "cloudflared-unum     unum tunnel token (reads from Terraform state)"
+    "cloudflared-fiatlux  fiatlux tunnel token (reads from Terraform state)"
+    "postgres             database password (auto-generated)"
+    "umami                database-url + app-secret"
+    "otel-collector       auth token (auto-generated, copy to GitHub Actions)"
+    "grafana              admin password (auto-generated)"
+    "all                  create all secrets in order"
     "quit"
 )
 
 PS3=$'\nSelect secret to create/rotate: '
 select opt in "${options[@]}"; do
     case "$REPLY" in
-        1) seal_cloudflared ;;
-        2) seal_postgres ;;
-        3) seal_umami ;;
-        4) seal_otel ;;
-        5) seal_grafana ;;
-        6)
-            seal_cloudflared
+        1) seal_cloudflared_unum ;;
+        2) seal_cloudflared_fiatlux ;;
+        3) seal_postgres ;;
+        4) seal_umami ;;
+        5) seal_otel ;;
+        6) seal_grafana ;;
+        7)
+            seal_cloudflared_unum
+            seal_cloudflared_fiatlux
             seal_postgres
             seal_umami
             seal_otel
             seal_grafana
             ;;
-        7) echo "bye"; exit 0 ;;
+        8) echo "bye"; exit 0 ;;
         *) echo "invalid selection — try again"; continue ;;
     esac
     break
