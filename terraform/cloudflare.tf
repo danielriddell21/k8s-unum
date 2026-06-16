@@ -54,10 +54,3 @@ moved {
   from = cloudflare_record.otel
   to   = module.tunnel_unum.cloudflare_record.this["otel"]
 }
-
-# kosmos was created on the unum tunnel; migrate it to the fiatlux tunnel.
-# The CNAME content will update in-place to point at the new tunnel ID.
-moved {
-  from = cloudflare_record.kosmos
-  to   = module.tunnel_fiatlux.cloudflare_record.this["kosmos"]
-}
