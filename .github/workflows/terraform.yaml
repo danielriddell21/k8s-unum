@@ -69,7 +69,7 @@ jobs:
           terraform show -json tfplan > plan.json
 
       - name: summary
-        uses: danielriddell21/tf-plan-summary-action@v1
+        uses: danielriddell21/tf-plan-summary-action@v2
         with:
           plan-file: terraform/plan.json
 
