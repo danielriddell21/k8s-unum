@@ -1,10 +1,10 @@
 resource "hcloud_ssh_key" "unum" {
-  name       = "unum-key"
+  name       = "server-key"
   public_key = var.ssh_public_key
 }
 
 resource "hcloud_server" "unum" {
-  name        = "unum"
+  name        = "server"
   server_type = "cx33"
   image       = "ubuntu-24.04"
   location    = "nbg1"
