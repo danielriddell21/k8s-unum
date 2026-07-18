@@ -18,8 +18,8 @@ check_deps() {
     done
 }
 
-rand_password() { openssl rand -base64 32 | tr -d '\n='; }
-rand_token()    { openssl rand -hex 32; }
+rand_password() { openssl rand -base64 32 | tr -d '\r\n='; }
+rand_token()    { openssl rand -hex 32 | tr -d '\r\n'; }
 
 # seal <namespace> <secret-name> <manifests-subdir> [--from-literal=k=v ...]
 seal() {
