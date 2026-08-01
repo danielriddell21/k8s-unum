@@ -87,24 +87,15 @@ seal_umami() {
         read -rsp "  postgres password (from postgres-secret): " pg_pass
         echo
     fi
-    local app_secret
+    local app_secret admin_pass
     app_secret=$(rand_token)
+    admin_pass=$(rand_password)
     seal platform umami-secret platform/umami \
         --from-literal="database-url=postgresql://umami:${pg_pass}@postgres:5432/umami" \
-        --from-literal="app-secret=$app_secret"
-    # Note: no admin password — Umami login is via Cloudflare Access OIDC
-    # (umami-sso). The seed Job disables the local admin password.
-}
-
-seal_umami_oidc() {
-    echo "→ umami-oidc (umami-sso ← Cloudflare Access)"
-    local issuer
-    issuer=$(tf_output umami_oidc_issuer)
-    seal platform umami-oidc platform/umami-sso \
-        --from-literal="client-id=$(tf_output umami_oidc_client_id)" \
-        --from-literal="client-secret=$(tf_output umami_oidc_client_secret)" \
-        --from-literal="issuer-url=$issuer" \
-        --from-literal="logout-url=$(tf_output umami_oidc_logout_url)"
+        --from-literal="app-secret=$app_secret" \
+        --from-literal="umami-admin-password=$admin_pass"
+    echo "  admin login: admin / $admin_pass"
+    echo "  (behind Cloudflare Access; enforced by the seed Job every sync)"
 }
 
 seal_otel() {
@@ -147,8 +138,7 @@ options=(
     "cloudflared-fiatlux   fiatlux tunnel token (reads from Terraform state)"
     "cloudflared-platform  platform tunnel token (reads from Terraform state)"
     "postgres              database password (auto-generated, platform ns)"
-    "umami                 database-url + app-secret (platform ns)"
-    "umami-oidc            umami-sso Cloudflare Access OIDC creds (from TF state)"
+    "umami                 database-url + app-secret + admin password (platform ns)"
     "otel-collector        auth token (auto-generated, copy to GitHub Actions)"
     "grafana               break-glass admin password + OIDC creds (platform ns)"
     "all                   create all secrets in order"
@@ -163,20 +153,18 @@ select opt in "${options[@]}"; do
         3) seal_cloudflared_platform ;;
         4) seal_postgres ;;
         5) seal_umami ;;
-        6) seal_umami_oidc ;;
-        7) seal_otel ;;
-        8) seal_grafana ;;
-        9)
+        6) seal_otel ;;
+        7) seal_grafana ;;
+        8)
             seal_cloudflared_unum
             seal_cloudflared_fiatlux
             seal_cloudflared_platform
             seal_postgres
             seal_umami
-            seal_umami_oidc
             seal_otel
             seal_grafana
             ;;
-        10) echo "bye"; exit 0 ;;
+        9) echo "bye"; exit 0 ;;
         *) echo "invalid selection — try again"; continue ;;
     esac
     break

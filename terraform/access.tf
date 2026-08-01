@@ -1,9 +1,12 @@
-# Cloudflare Access as the OIDC identity provider for the browser-facing platform
-# admin apps (Grafana, ArgoCD, and Umami via the umami-sso sidecar). Each SaaS
-# app issues an OIDC client_id/secret; relying parties discover endpoints at
+# Cloudflare Access for the browser-facing platform admin apps.
+#
+# Grafana and ArgoCD support OIDC natively, so they use Access SaaS-OIDC apps
+# (SSO, no app password). Relying parties discover endpoints at
 #   https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client_id>/.well-known/openid-configuration
-# Access enforces identity (one-time PIN to var.access_email) before issuing
-# tokens, so the apps delegate login entirely to Cloudflare (no app passwords).
+#
+# Umami has no usable OIDC (umami-sso requires an end_session_endpoint that
+# Cloudflare Access does not publish), so it uses a self-hosted Access app that
+# gates the hostname; Umami keeps its own login behind that gate.
 #
 # NOTE: var.cloudflare_api_token must additionally have
 # "Account > Access: Apps and Policies: Edit" for these resources.
@@ -13,7 +16,6 @@ locals {
   access_oidc_apps = {
     grafana = "https://grafana.${var.domain}/login/generic_oauth"
     argocd  = "https://argocd.${var.domain}/auth/callback"
-    umami   = "https://umami.${var.domain}/login/callback"
   }
 }
 
@@ -37,6 +39,27 @@ resource "cloudflare_zero_trust_access_policy" "allow_owner" {
   account_id     = var.cloudflare_account_id
   application_id = cloudflare_zero_trust_access_application.oidc[each.key].id
   name           = "allow-owner-${each.key}"
+  precedence     = 1
+  decision       = "allow"
+
+  include {
+    email = [var.access_email]
+  }
+}
+
+# Umami: self-hosted Access app gating the hostname (Umami keeps its own login).
+resource "cloudflare_zero_trust_access_application" "umami" {
+  account_id       = var.cloudflare_account_id
+  name             = "umami"
+  domain           = "umami.${var.domain}"
+  type             = "self_hosted"
+  session_duration = "24h"
+}
+
+resource "cloudflare_zero_trust_access_policy" "allow_owner_umami" {
+  account_id     = var.cloudflare_account_id
+  application_id = cloudflare_zero_trust_access_application.umami.id
+  name           = "allow-owner-umami"
   precedence     = 1
   decision       = "allow"
 

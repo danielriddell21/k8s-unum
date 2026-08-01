@@ -41,7 +41,7 @@ module "tunnel_platform" {
   ingress_rules = [
     { hostname = "otel.${var.domain}", service = "http://otel-collector:4318" },
     { hostname = "grafana.${var.domain}", service = "http://grafana:3000" },
-    { hostname = "umami.${var.domain}", service = "http://umami-proxy:80" },
+    { hostname = "umami.${var.domain}", service = "http://umami:3000" },
     { hostname = "argocd.${var.domain}", service = "http://argocd-server.argocd:80" },
   ]
 }

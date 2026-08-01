@@ -45,18 +45,6 @@ output "argocd_oidc_client_secret" {
   sensitive   = true
 }
 
-output "umami_oidc_client_id" {
-  description = "Cloudflare Access OIDC client id for umami-sso — seal into umami-oidc secret"
-  value       = cloudflare_zero_trust_access_application.oidc["umami"].saas_app[0].client_id
-  sensitive   = true
-}
-
-output "umami_oidc_client_secret" {
-  description = "Cloudflare Access OIDC client secret for umami-sso — seal into umami-oidc secret"
-  value       = cloudflare_zero_trust_access_application.oidc["umami"].saas_app[0].client_secret
-  sensitive   = true
-}
-
 # Per-app OIDC issuer URLs (team domain + client id). Relying parties derive
 # /authorization, /token, /userinfo, /.well-known/openid-configuration from these.
 output "grafana_oidc_issuer" {
@@ -71,16 +59,6 @@ output "argocd_oidc_issuer" {
   sensitive   = true
 }
 
-output "umami_oidc_issuer" {
-  description = "OIDC issuer URL for umami-sso"
-  value       = "https://${var.cloudflare_access_team_domain}/cdn-cgi/access/sso/oidc/${cloudflare_zero_trust_access_application.oidc["umami"].saas_app[0].client_id}"
-  sensitive   = true
-}
-
-output "umami_oidc_logout_url" {
-  description = "Cloudflare Access team logout URL (umami-sso UMAMI_LOGOUT_URL). Cloudflare does not publish end_session_endpoint; verify against the discovery doc after apply."
-  value       = "https://${var.cloudflare_access_team_domain}/cdn-cgi/access/logout"
-}
 
 output "post_apply" {
   description = "Manual steps to complete after terraform apply"
@@ -108,11 +86,10 @@ output "post_apply" {
        as-is the SealedSecret controller can't decrypt and the pods CrashLoop
        with secret-not-found). Sealed secrets are bound to namespace+name, so
        all three cloudflared tokens + the platform secrets must be sealed:
-         just seal-secrets   # → option 9 (all): 3 cloudflared tokens + postgres/
-                             #   umami/umami-oidc/otel/grafana (all platform ns)
+         just seal-secrets   # → option 8 (all): 3 cloudflared tokens +
+                             #   postgres/umami/otel/grafana (all platform ns)
          git add manifests/*/cloudflared/sealed-secret.yaml \
-                 manifests/platform/*/sealed-secret.yaml \
-                 manifests/platform/umami-sso/sealed-secret.yaml
+                 manifests/platform/*/sealed-secret.yaml
          git commit -m "seal: all secrets"
          git push
 
