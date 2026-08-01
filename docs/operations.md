@@ -27,36 +27,36 @@ To pin to a specific image tag, edit the `image:` field in the relevant `manifes
 
 ## Observability & control-plane access
 
-Grafana, Umami, and ArgoCD are exposed publicly and all authenticate through
-**Cloudflare Access (OIDC SSO)** — one identity, no per-app passwords. Prometheus,
-Loki, and Tempo have no auth and are never exposed — query them through Grafana
-datasources. Access is gated to `access_email` (one-time PIN); the Access apps
-and policies are managed in `terraform/access.tf`.
+Grafana and ArgoCD authenticate through **Cloudflare Access (OIDC SSO)** — one
+identity, no app password. Umami is exposed with **its own login** (no native
+OIDC that works with Access — see below). Prometheus, Loki, and Tempo have no
+auth and are never exposed — query them through Grafana datasources. Access is
+gated to `access_email` (one-time PIN); the Access apps live in `terraform/access.tf`.
 
 | Tool | Login | URL |
 |---|---|---|
 | Grafana | Cloudflare Access OIDC (auto-login) | https://grafana.riddellious.dev |
-| Umami | Cloudflare Access OIDC (via umami-sso) | https://umami.riddellious.dev |
+| Umami | Umami's own admin login | https://umami.riddellious.dev |
 | ArgoCD | Cloudflare Access OIDC | https://argocd.riddellious.dev |
 
 `just argocd` still port-forwards to https://localhost:9090; the Grafana
 break-glass admin (`grafana-secret`) works over a port-forward too, bypassing SSO.
 
 > **Security notes**
-> - **SSO everywhere:** each app delegates login to Cloudflare Access via OIDC.
->   Grafana uses generic-oauth auto-login; ArgoCD uses `oidc.config`; Umami uses
->   the `umami-sso` sidecar (Umami has no native SSO). Cloudflare verifies identity
->   before issuing tokens, so no app has an internet-facing password prompt.
-> - **Umami local password is disabled** by the `umami-seed` Job (set to a
->   non-bcrypt sentinel) so `/api/auth/login` can't bypass SSO.
-> - **Grafana** keeps a break-glass admin password in `grafana-secret` for
->   port-forward access only; the public login form is disabled.
-> - **ArgoCD** is the cluster control plane; it runs `server.insecure` behind the
->   tunnel (TLS terminated at Cloudflare) and authenticates via OIDC with the
->   `access_email` mapped to `role:admin`.
-> - **In-cluster caveat:** SSO protects the public path. Anything already inside
->   the cluster can reach these Services directly; add NetworkPolicies if that
->   matters for your threat model.
+> - **Grafana / ArgoCD** delegate login to Cloudflare Access via OIDC (Grafana
+>   generic-oauth auto-login; ArgoCD `oidc.config`), so no internet-facing
+>   password prompt. Grafana keeps a break-glass admin in `grafana-secret` for
+>   port-forward only. ArgoCD is the control plane; it runs `server.insecure`
+>   behind the tunnel with `access_email` mapped to `role:admin`.
+> - **Umami** has no usable SSO for Cloudflare Access (umami-sso requires an
+>   `end_session_endpoint` Cloudflare doesn't publish), so it's exposed with only
+>   its own login. The admin password is a strong generated value in
+>   `umami-secret`, set + enforced by the `umami-seed` Job every sync. This is the
+>   one public login page — acceptable for a personal analytics panel, but one
+>   layer less than Grafana/ArgoCD.
+> - **In-cluster caveat:** these protections cover the public path. Anything
+>   already inside the cluster can reach the Services directly; add NetworkPolicies
+>   if that matters for your threat model.
 
 ## Resizing the VM
 

@@ -14,12 +14,11 @@ Internet
         ├─→ Cloudflare Tunnel: fiatlux
         │     └─→ cloudflared pod (fiatlux namespace)
         │           └─→ fiatlux      :8080
-        └─→ Cloudflare Tunnel: platform          (Grafana/Umami/ArgoCD = OIDC SSO)
+        └─→ Cloudflare Tunnel: platform      (Grafana/ArgoCD = OIDC SSO)
               └─→ cloudflared pod (platform namespace)
                     ├─→ otel-collector      :4318  (bearer token auth)
                     ├─→ grafana             :3000  (OIDC → Cloudflare Access)
-                    ├─→ umami-proxy         :80    → umami-sso :8000  (/login,/logout, OIDC)
-                    │                              → umami     :3000  (everything else)
+                    ├─→ umami               :3000  (Umami's own login)
                     └─→ argocd-server.argocd :80   (OIDC → Cloudflare Access)
 
 Hetzner K8s (Nuremberg) ← ArgoCD watches manifests/{unum,fiatlux,platform}/ on trunk
@@ -47,11 +46,12 @@ Umami   ← JS snippet via /umami/* proxy on unum/fiatlux pods; websites seeded
           (admin UI public at umami.${domain}, own login)
 ```
 
-Grafana and Umami are publicly exposed via the platform tunnel and gate access
-with their own logins. Prometheus, Loki, and Tempo have **no authentication** and
-are never exposed publicly — query them through Grafana. The observability stack
-refers to itself by bare service names (same namespace); consumers in
-`unum`/`fiatlux` reach it cross-namespace via `<svc>.platform`.
+Grafana and ArgoCD are publicly exposed via the platform tunnel behind Cloudflare
+Access OIDC SSO; Umami is exposed with its own login. Prometheus, Loki, and Tempo
+have **no authentication** and are never exposed publicly — query them through
+Grafana. The observability stack refers to itself by bare service names (same
+namespace); consumers in `unum`/`fiatlux` reach it cross-namespace via
+`<svc>.platform`.
 
 ## Repository structure
 
@@ -69,15 +69,13 @@ riddellious-dev/
       configmap.yaml          # fiatlux-config (world config, mounted /etc/fiatlux)
       umami-config.yaml       # kosmos website ID (namespace-local)
       cloudflared/            # fiatlux tunnel client
-      fiatlux/                # simulator pod: fiatlux + ollama sidecar (pulls gemma4 via initContainer) + PVC
+      fiatlux/                # simulator pod: fiatlux + ollama sidecar (pulls gemma2:2b via initContainer) + PVC
       sqld/                   # libSQL primary; strategy: Recreate (single-writer)
     platform/                 # watched by argocd/platform.yaml — shared services
       namespace.yaml
       cloudflared/            # platform tunnel client (otel/grafana/umami/argocd)
       otel-collector/ grafana/         # deployment + service + configmap + sealed-secret
       umami/                  # deployment + service + sealed-secret + seed-job (PostSync hook)
-      umami-sso/              # OIDC sidecar (Cloudflare Access) + umami-oidc sealed-secret
-      umami-proxy/            # nginx: /login,/logout → umami-sso, rest → umami
       postgres/               # statefulset + service + sealed-secret
       prometheus/ loki/ tempo/         # statefulset + service + configmap
   argocd/                     # Applied once manually during cluster bootstrap;
