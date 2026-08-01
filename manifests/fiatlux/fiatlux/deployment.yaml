@@ -74,13 +74,27 @@ spec:
           args:
             - "serve"
             - "--config=/etc/fiatlux/config.yaml"
-            - "--db=http://sqld-svc:8080"
+            - "--db=http://sqld:8080"
             - "--web-addr=:8080"
             - "--tick=10s"
             - "--save-mode=interval:30s"
           ports:
             - name: web
               containerPort: 8080
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.platform:4319"
+            - name: OTEL_SERVICE_NAME
+              value: "fiatlux"
+            - name: UMAMI_URL
+              value: "http://umami.platform:3000"
+            - name: UMAMI_WEBSITE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: umami-config
+                  key: kosmos_website_id
+            - name: UMAMI_HOSTNAME
+              value: "kosmos.riddellious.dev"
           volumeMounts:
             - name: config
               mountPath: /etc/fiatlux

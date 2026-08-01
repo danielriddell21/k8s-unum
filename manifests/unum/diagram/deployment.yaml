@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: unum-diff
+  name: unum-diagram
   namespace: unum
 spec:
   replicas: 1
   revisionHistoryLimit: 2
   selector:
     matchLabels:
-      app: unum-diff
+      app: unum-diagram
   template:
     metadata:
       labels:
-        app: unum-diff
+        app: unum-diagram
     spec:
       containers:
-        - name: unum-diff
+        - name: unum-diagram
           image: ghcr.io/danielriddell21/unum:v1.7.1
-          args: ["diff", "--web"]
+          args: ["diagram", "--web"]
           ports:
             - containerPort: 8080
           env:
@@ -28,7 +28,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector.platform:4319"
             - name: OTEL_SERVICE_NAME
-              value: "unum-diff"
+              value: "unum-diagram"
             - name: UNUM_ENV
               value: "production"
             - name: UMAMI_URL
@@ -37,9 +37,9 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: umami-config
-                  key: diff_website_id
+                  key: diagram_website_id
             - name: UMAMI_HOSTNAME
-              value: "diff.riddellious.dev"
+              value: "diagram.riddellious.dev"
           volumeMounts:
             - name: unum-config
               mountPath: /etc/unum

@@ -30,3 +30,13 @@ variable "domain" {
   type        = string
   default     = "unum.tools"
 }
+
+variable "access_email" {
+  description = "Email allowed through Cloudflare Access (one-time PIN) to the platform admin apps (Grafana/ArgoCD/Umami)"
+  type        = string
+}
+
+variable "cloudflare_access_team_domain" {
+  description = "Cloudflare Zero Trust team domain, e.g. myteam.cloudflareaccess.com (Zero Trust dashboard > Settings > Custom Pages). Used to build the OIDC issuer URL for the platform apps."
+  type        = string
+}

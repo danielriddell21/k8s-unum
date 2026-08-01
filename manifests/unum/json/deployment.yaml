@@ -26,13 +26,13 @@ spec:
             - name: XDG_CONFIG_HOME
               value: /etc
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://otel-collector:4319"
+              value: "http://otel-collector.platform:4319"
             - name: OTEL_SERVICE_NAME
               value: "unum-json"
             - name: UNUM_ENV
               value: "production"
             - name: UMAMI_URL
-              value: "http://umami:3000"
+              value: "http://umami.platform:3000"
             - name: UMAMI_WEBSITE_ID
               valueFrom:
                 configMapKeyRef:

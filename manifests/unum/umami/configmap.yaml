@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: umami-config
-  namespace: unum
-data:
-  json_website_id: "ece07fbe-fce4-45d0-8b69-987412f9088b"
-  diff_website_id: "46669571-ac1a-4923-81af-fd1b33352a11"
-  hash_website_id: "36aa73d5-0202-454c-ab53-b1188ae0e65a"

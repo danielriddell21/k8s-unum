@@ -11,7 +11,7 @@
 endpoints = {
   s3 = "https://3f92ad6c3854252d14a0c92b85753658.r2.cloudflarestorage.com"
 }
-bucket                      = "unum-tfstate"
+bucket                      = "riddellious-dev-tfstate"
 key                         = "terraform.tfstate"
 region                      = "auto"
 skip_credentials_validation  = true

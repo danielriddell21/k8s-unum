@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: grafana
+  namespace: platform
+spec:
+  serviceName: grafana
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          env:
+            # Break-glass local admin (reachable via `just` port-forward)
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: admin-password
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "false"
+            - name: GF_SERVER_ROOT_URL
+              value: "https://grafana.riddellious.dev"
+            # SSO via Cloudflare Access (OIDC). Public login goes straight to
+            # Cloudflare; the local login form is hidden (port-forward bypasses
+            # this for break-glass).
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_ENABLED
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_NAME
+              value: "Cloudflare Access"
+            - name: GF_AUTH_GENERIC_OAUTH_AUTO_LOGIN
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_SCOPES
+              value: "openid email profile"
+            - name: GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP
+              value: "true"
+            - name: GF_USERS_AUTO_ASSIGN_ORG_ROLE
+              value: "Admin"
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: oidc-client-id
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: oidc-client-secret
+            - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: oidc-auth-url
+            - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: oidc-token-url
+            - name: GF_AUTH_GENERIC_OAUTH_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: oidc-api-url
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: config
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/grafana
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: grafana-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi

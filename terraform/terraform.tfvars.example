@@ -3,4 +3,9 @@ ssh_public_key        = "ssh-ed25519 AAAA... your-key-comment"
 cloudflare_api_token  = "your-cloudflare-api-token"
 cloudflare_account_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 cloudflare_zone_id    = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-domain                = "unum.tools"
+domain                = "riddellious.dev"
+
+# Cloudflare Access (SSO for Grafana/ArgoCD/Umami). The API token above also
+# needs "Account > Access: Apps and Policies: Edit".
+access_email                  = "you@example.com"
+cloudflare_access_team_domain = "yourteam.cloudflareaccess.com"

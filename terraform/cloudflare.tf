@@ -8,7 +8,7 @@ module "tunnel_unum" {
     { hostname = "hash.${var.domain}", service = "http://unum-hash:8080" },
     { hostname = "json.${var.domain}", service = "http://unum-json:8080" },
     { hostname = "diff.${var.domain}", service = "http://unum-diff:8080" },
-    { hostname = "otel.${var.domain}", service = "http://otel-collector:4318" },
+    { hostname = "diagram.${var.domain}", service = "http://unum-diagram:8080" },
   ]
 }
 
@@ -19,7 +19,30 @@ module "tunnel_fiatlux" {
   zone_id    = var.cloudflare_zone_id
 
   ingress_rules = [
-    { hostname = "kosmos.${var.domain}", service = "http://fiatlux-svc:80" },
+    { hostname = "kosmos.${var.domain}", service = "http://fiatlux:8080" },
+  ]
+}
+
+module "tunnel_platform" {
+  source     = "./modules/cloudflare_tunnel"
+  name       = "platform"
+  account_id = var.cloudflare_account_id
+  zone_id    = var.cloudflare_zone_id
+
+  # Publicly exposed platform services. otel-collector authenticates with a
+  # bearer token; Grafana and Umami have their own login. Prometheus, Loki, and
+  # Tempo have NO auth and stay cluster-internal (never added here).
+  #
+  # argocd-server lives in the argocd namespace (reached cross-namespace). It is
+  # the cluster control plane — put Cloudflare Access in front of argocd.${domain}
+  # and run argocd-server with server.insecure=true (see terraform outputs /
+  # docs/operations.md). Routing to :80 (plain HTTP) relies on that insecure mode;
+  # TLS is terminated at the Cloudflare edge.
+  ingress_rules = [
+    { hostname = "otel.${var.domain}", service = "http://otel-collector:4318" },
+    { hostname = "grafana.${var.domain}", service = "http://grafana:3000" },
+    { hostname = "umami.${var.domain}", service = "http://umami-proxy:80" },
+    { hostname = "argocd.${var.domain}", service = "http://argocd-server.argocd:80" },
   ]
 }
 
@@ -53,4 +76,12 @@ moved {
 moved {
   from = cloudflare_record.otel
   to   = module.tunnel_unum.cloudflare_record.this["otel"]
+}
+
+# otel-collector moved from the unum namespace to the platform namespace, so the
+# otel.${domain} record now lives on the platform tunnel. Move state (content
+# updates to the new tunnel id in place) instead of destroy/recreate.
+moved {
+  from = module.tunnel_unum.cloudflare_record.this["otel"]
+  to   = module.tunnel_platform.cloudflare_record.this["otel"]
 }

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: umami-config
+  namespace: fiatlux
+data:
+  # Umami website ID for kosmos.riddellious.dev, seeded into Umami's DB by
+  # platform/umami/seed-job.yaml. Mirrors unum's umami-config layout.
+  kosmos_website_id: "a49eacf3-ac14-46ee-9c60-5225a7744e5f"

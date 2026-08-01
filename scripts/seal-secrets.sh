@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# seal-secrets.sh — interactive Sealed Secret manager for k8s-unum
+# seal-secrets.sh — interactive Sealed Secret manager for riddellious-dev
 # Run via: just seal-secrets
 set -euo pipefail
 
@@ -63,10 +63,18 @@ seal_cloudflared_fiatlux() {
         --from-literal="token=$token"
 }
 
+seal_cloudflared_platform() {
+    echo "→ cloudflared-token (platform)"
+    local token
+    token=$(tf_output platform_tunnel_token)
+    seal platform cloudflared-token platform/cloudflared \
+        --from-literal="token=$token"
+}
+
 seal_postgres() {
     echo "→ postgres-secret"
     POSTGRES_PASSWORD=$(rand_password)
-    seal unum postgres-secret unum/postgres \
+    seal platform postgres-secret platform/postgres \
         --from-literal="password=$POSTGRES_PASSWORD"
     echo "  password: $POSTGRES_PASSWORD"
     echo "  (copy this — you will need it when creating umami-secret)"
@@ -81,28 +89,47 @@ seal_umami() {
     fi
     local app_secret
     app_secret=$(rand_token)
-    seal unum umami-secret unum/umami \
+    seal platform umami-secret platform/umami \
         --from-literal="database-url=postgresql://umami:${pg_pass}@postgres:5432/umami" \
         --from-literal="app-secret=$app_secret"
+    # Note: no admin password — Umami login is via Cloudflare Access OIDC
+    # (umami-sso). The seed Job disables the local admin password.
+}
+
+seal_umami_oidc() {
+    echo "→ umami-oidc (umami-sso ← Cloudflare Access)"
+    local issuer
+    issuer=$(tf_output umami_oidc_issuer)
+    seal platform umami-oidc platform/umami-sso \
+        --from-literal="client-id=$(tf_output umami_oidc_client_id)" \
+        --from-literal="client-secret=$(tf_output umami_oidc_client_secret)" \
+        --from-literal="issuer-url=$issuer" \
+        --from-literal="logout-url=$(tf_output umami_oidc_logout_url)"
 }
 
 seal_otel() {
     echo "→ otel-collector-secret"
     local token
     token=$(rand_token)
-    seal unum otel-collector-secret unum/otel-collector \
+    seal platform otel-collector-secret platform/otel-collector \
         --from-literal="auth-token=$token"
     echo "  auth-token: $token"
     echo "  (add this value to GitHub Actions secret: OTEL_AUTH_TOKEN)"
 }
 
 seal_grafana() {
-    echo "→ grafana-secret"
-    local password
+    echo "→ grafana-secret (break-glass admin password + Cloudflare Access OIDC)"
+    local password issuer
     password=$(rand_password)
-    seal unum grafana-secret unum/grafana \
-        --from-literal="admin-password=$password"
-    echo "  admin-password: $password"
+    issuer=$(tf_output grafana_oidc_issuer)
+    seal platform grafana-secret platform/grafana \
+        --from-literal="admin-password=$password" \
+        --from-literal="oidc-client-id=$(tf_output grafana_oidc_client_id)" \
+        --from-literal="oidc-client-secret=$(tf_output grafana_oidc_client_secret)" \
+        --from-literal="oidc-auth-url=${issuer}/authorization" \
+        --from-literal="oidc-token-url=${issuer}/token" \
+        --from-literal="oidc-api-url=${issuer}/userinfo"
+    echo "  admin-password (break-glass, via port-forward): $password"
 }
 
 # ── menu ─────────────────────────────────────────────────────────────────────
@@ -110,19 +137,21 @@ seal_grafana() {
 check_deps
 
 echo ""
-echo "k8s-unum secret manager"
+echo "riddellious-dev secret manager"
 echo "========================"
 echo "KUBECONFIG: $KUBECONFIG_PATH"
 echo ""
 
 options=(
-    "cloudflared-unum     unum tunnel token (reads from Terraform state)"
-    "cloudflared-fiatlux  fiatlux tunnel token (reads from Terraform state)"
-    "postgres             database password (auto-generated)"
-    "umami                database-url + app-secret"
-    "otel-collector       auth token (auto-generated, copy to GitHub Actions)"
-    "grafana              admin password (auto-generated)"
-    "all                  create all secrets in order"
+    "cloudflared-unum      unum tunnel token (reads from Terraform state)"
+    "cloudflared-fiatlux   fiatlux tunnel token (reads from Terraform state)"
+    "cloudflared-platform  platform tunnel token (reads from Terraform state)"
+    "postgres              database password (auto-generated, platform ns)"
+    "umami                 database-url + app-secret (platform ns)"
+    "umami-oidc            umami-sso Cloudflare Access OIDC creds (from TF state)"
+    "otel-collector        auth token (auto-generated, copy to GitHub Actions)"
+    "grafana               break-glass admin password + OIDC creds (platform ns)"
+    "all                   create all secrets in order"
     "quit"
 )
 
@@ -131,19 +160,23 @@ select opt in "${options[@]}"; do
     case "$REPLY" in
         1) seal_cloudflared_unum ;;
         2) seal_cloudflared_fiatlux ;;
-        3) seal_postgres ;;
-        4) seal_umami ;;
-        5) seal_otel ;;
-        6) seal_grafana ;;
-        7)
+        3) seal_cloudflared_platform ;;
+        4) seal_postgres ;;
+        5) seal_umami ;;
+        6) seal_umami_oidc ;;
+        7) seal_otel ;;
+        8) seal_grafana ;;
+        9)
             seal_cloudflared_unum
             seal_cloudflared_fiatlux
+            seal_cloudflared_platform
             seal_postgres
             seal_umami
+            seal_umami_oidc
             seal_otel
             seal_grafana
             ;;
-        8) echo "bye"; exit 0 ;;
+        10) echo "bye"; exit 0 ;;
         *) echo "invalid selection — try again"; continue ;;
     esac
     break

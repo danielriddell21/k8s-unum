@@ -10,62 +10,86 @@ Internet
         │           ├─→ unum-hash     :8080
         │           ├─→ unum-json     :8080
         │           ├─→ unum-diff     :8080
-        │           └─→ otel-collector :4318  (bearer token auth)
-        └─→ Cloudflare Tunnel: fiatlux
-              └─→ cloudflared pod (fiatlux namespace)
-                    └─→ fiatlux-svc :80
+        │           └─→ unum-diagram  :8080
+        ├─→ Cloudflare Tunnel: fiatlux
+        │     └─→ cloudflared pod (fiatlux namespace)
+        │           └─→ fiatlux      :8080
+        └─→ Cloudflare Tunnel: platform          (Grafana/Umami/ArgoCD = OIDC SSO)
+              └─→ cloudflared pod (platform namespace)
+                    ├─→ otel-collector      :4318  (bearer token auth)
+                    ├─→ grafana             :3000  (OIDC → Cloudflare Access)
+                    ├─→ umami-proxy         :80    → umami-sso :8000  (/login,/logout, OIDC)
+                    │                              → umami     :3000  (everything else)
+                    └─→ argocd-server.argocd :80   (OIDC → Cloudflare Access)
 
-Hetzner K8s (Nuremberg) ← ArgoCD watches manifests/{unum,fiatlux}/ on trunk
+Hetzner K8s (Nuremberg) ← ArgoCD watches manifests/{unum,fiatlux,platform}/ on trunk
 ```
 
-Each namespace runs its own `cloudflared` pod connected to its own Cloudflare tunnel; the two tunnels share one VM and are provisioned by the same `cloudflare_tunnel` Terraform module. The three unum tools (`hash`/`json`/`diff`) run from the same image (`ghcr.io/danielriddell21/unum`) — the Deployment `args` field selects the tool.
+Each namespace runs its own `cloudflared` pod connected to its own Cloudflare tunnel; the three tunnels share one VM and are provisioned by the same `cloudflare_tunnel` Terraform module. The four unum tools (`hash`/`json`/`diff`/`diagram`) run from the same image (`ghcr.io/danielriddell21/unum`) — the Deployment `args` field selects the tool. The shared observability + analytics stack (otel-collector, Prometheus, Loki, Tempo, Grafana, Umami, Postgres) lives in the **platform** namespace; only otel-collector is publicly exposed (via the platform tunnel).
 
-## Telemetry stack (cluster-internal only)
+## Telemetry stack (platform namespace)
 
 ```
-unum pods (json/diff/hash)
-  ├── /metrics          → Prometheus scrapes
-  └── OTLP push         → otel-collector:4319 (no auth, in-cluster)
+unum + fiatlux pods
+  ├── /metrics          → Prometheus scrapes (cross-namespace: <svc>.unum:8080)
+  └── OTLP push         → otel-collector.platform:4319 (no auth, in-cluster)
 
 CLI/TUI users (Homebrew installs etc.)
   └── OTLP push         → otel.riddellious.dev → otel-collector:4318 (bearer auth)
 
-otel-collector
-  ├── traces            → Loki  (structured event log streams)
+otel-collector (platform)
+  ├── traces            → Tempo (queryable via Grafana)
   └── metrics :8889     → Prometheus scrapes
 
-Grafana ← Prometheus + Loki   (kubectl port-forward only)
-Umami   ← JS snippet via /umami/* proxy on unum pods
+Grafana ← Prometheus + Loki + Tempo   (public at grafana.${domain}, own login)
+Umami   ← JS snippet via /umami/* proxy on unum/fiatlux pods; websites seeded
+          into Umami's Postgres by the umami-seed Job (no manual UI step)
+          (admin UI public at umami.${domain}, own login)
 ```
 
-Grafana, Umami, Prometheus, and Loki are never exposed publicly.
+Grafana and Umami are publicly exposed via the platform tunnel and gate access
+with their own logins. Prometheus, Loki, and Tempo have **no authentication** and
+are never exposed publicly — query them through Grafana. The observability stack
+refers to itself by bare service names (same namespace); consumers in
+`unum`/`fiatlux` reach it cross-namespace via `<svc>.platform`.
 
 ## Repository structure
 
 ```
-k8s-unum/
+riddellious-dev/
   manifests/                  # one subdirectory per namespace
     unum/                     # watched by argocd/unum.yaml
       namespace.yaml
       configmap.yaml
+      umami-config.yaml       # per-tool Umami website IDs (namespace-local)
       cloudflared/            # unum tunnel client
-      hash/ json/ diff/       # unum tools (Deployment + Service per dir)
-      postgres/               # statefulset + service + sealed-secret
-      umami/ otel-collector/ grafana/  # deployment + service + configmap + sealed-secret
-      prometheus/ loki/ tempo/         # statefulset + service + configmap
+      hash/ json/ diff/ diagram/   # unum tools (Deployment + Service per dir)
     fiatlux/                  # watched by argocd/fiatlux.yaml
       namespace.yaml
+      configmap.yaml          # fiatlux-config (world config, mounted /etc/fiatlux)
+      umami-config.yaml       # kosmos website ID (namespace-local)
       cloudflared/            # fiatlux tunnel client
-      fiatlux/                # simulator pod: fiatlux + ollama sidecar (pulls gemma4 via initContainer) + PVC + ConfigMap
+      fiatlux/                # simulator pod: fiatlux + ollama sidecar (pulls gemma4 via initContainer) + PVC
       sqld/                   # libSQL primary; strategy: Recreate (single-writer)
+    platform/                 # watched by argocd/platform.yaml — shared services
+      namespace.yaml
+      cloudflared/            # platform tunnel client (otel/grafana/umami/argocd)
+      otel-collector/ grafana/         # deployment + service + configmap + sealed-secret
+      umami/                  # deployment + service + sealed-secret + seed-job (PostSync hook)
+      umami-sso/              # OIDC sidecar (Cloudflare Access) + umami-oidc sealed-secret
+      umami-proxy/            # nginx: /login,/logout → umami-sso, rest → umami
+      postgres/               # statefulset + service + sealed-secret
+      prometheus/ loki/ tempo/         # statefulset + service + configmap
   argocd/                     # Applied once manually during cluster bootstrap;
     unum.yaml                 #   ArgoCD lives in its own argocd namespace and
-    fiatlux.yaml              #   reconciles workloads into unum + fiatlux.
+    fiatlux.yaml              #   reconciles workloads into unum, fiatlux,
+    platform.yaml             #   and platform.
     sealed-secrets.yaml       # Sealed Secrets controller (kube-system)
   terraform/
     main.tf                   # providers + S3 backend
     hetzner.tf                # cx32 server + SSH key (k3s via cloud-init)
-    cloudflare.tf             # two module calls (unum + fiatlux) + moved blocks
+    cloudflare.tf             # three module calls (unum/fiatlux/platform) + moved blocks
+    access.tf                 # Cloudflare Access SaaS-OIDC apps (SSO for grafana/argocd/umami)
     modules/cloudflare_tunnel/   # reusable: tunnel + config + per-hostname CNAME
     variables.tf
     outputs.tf

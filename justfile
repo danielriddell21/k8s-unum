@@ -25,22 +25,15 @@ argocd-password:
     KUBECONFIG={{ kubeconfig_path }} kubectl -n argocd get secret argocd-initial-admin-secret \
         -o jsonpath="{.data.password}" | base64 -d && echo
 
-# Show status of pods in unum and fiatlux namespaces
+# Show status of pods in unum, fiatlux, and platform namespaces
 status:
     KUBECONFIG={{ kubeconfig_path }} kubectl get pods -n unum
     KUBECONFIG={{ kubeconfig_path }} kubectl get pods -n fiatlux
+    KUBECONFIG={{ kubeconfig_path }} kubectl get pods -n platform
 
 # Show ArgoCD app sync status
 sync-status:
     KUBECONFIG={{ kubeconfig_path }} kubectl get applications -n argocd
-
-# Port-forward Grafana to http://localhost:3000 (admin credentials in grafana-secret)
-grafana:
-    KUBECONFIG={{ kubeconfig_path }} kubectl port-forward svc/grafana -n unum 3000:3000
-
-# Port-forward Umami admin to http://localhost:3001
-umami:
-    KUBECONFIG={{ kubeconfig_path }} kubectl port-forward svc/umami -n unum 3001:3000
 
 # Create or rotate any sealed secret — interactive menu (requires kubeseal + cluster access)
 seal-secrets:

@@ -1,0 +1,46 @@
+# Reverse proxy in front of Umami: routes /login + /logout to umami-sso (OIDC)
+# and everything else to Umami. The platform tunnel points umami.${domain} here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: umami-proxy
+  namespace: platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: umami-proxy
+  template:
+    metadata:
+      labels:
+        app: umami-proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: umami-proxy-config

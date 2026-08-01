@@ -1,6 +1,6 @@
 # Terraform
 
-Terraform provisions the Hetzner server and two Cloudflare Tunnels (one per namespace) via the `cloudflare_tunnel` module. State is stored in Cloudflare R2.
+Terraform provisions the Hetzner server and three Cloudflare Tunnels (one per namespace: unum, fiatlux, platform) via the `cloudflare_tunnel` module. State is stored in Cloudflare R2.
 
 ## Initial setup
 
@@ -12,7 +12,7 @@ terraform init -backend-config=backend.hcl
 terraform apply
 ```
 
-The `unum_tunnel_token` and `fiatlux_tunnel_token` outputs are sensitive — managed via Sealed Secrets so they can be committed safely. See [secrets.md](secrets.md).
+The `unum_tunnel_token`, `fiatlux_tunnel_token`, and `platform_tunnel_token` outputs are sensitive — managed via Sealed Secrets so they can be committed safely. See [secrets.md](secrets.md).
 
 ## R2 state backend
 
@@ -45,9 +45,18 @@ Create two environments under **Settings → Environments**:
 |---|---|
 | `HETZNER_TOKEN` | Hetzner Cloud API token |
 | `SSH_PUBLIC_KEY` | SSH public key (placed on server at provision time) |
-| `CLOUDFLARE_API_TOKEN` | Zone:DNS:Edit + Account:Cloudflare Tunnel:Edit |
+| `CLOUDFLARE_API_TOKEN` | Zone:DNS:Edit + Account:Cloudflare Tunnel:Edit + Account:Access: Apps and Policies:Edit |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare zone ID for the domain |
+
+### Required GitHub variables
+
+Non-sensitive; set as repository **variables** (Settings → Secrets and variables → Actions → Variables):
+
+| Variable | Description |
+|---|---|
+| `ACCESS_EMAIL` | Email allowed through Cloudflare Access (SSO) to Grafana/ArgoCD/Umami |
+| `CLOUDFLARE_ACCESS_TEAM_DOMAIN` | Zero Trust team domain, e.g. `myteam.cloudflareaccess.com` |
 | `R2_ACCESS_KEY_ID` | R2 API token access key (Terraform state backend) |
 | `R2_SECRET_ACCESS_KEY` | R2 API token secret key (Terraform state backend) |
 | `OTEL_AUTH_TOKEN` | Bearer token baked into unum release builds and OTel Collector secret |

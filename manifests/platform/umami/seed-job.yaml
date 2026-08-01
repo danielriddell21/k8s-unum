@@ -1,0 +1,84 @@
+# Seeds Umami's Postgres after each sync (ArgoCD PostSync hook). Two jobs, both
+# idempotent so re-running is safe:
+#   1. Insert fixed website UUIDs so the per-tool website IDs in the unum/fiatlux
+#      ConfigMaps resolve without any manual "create website in the UI + paste
+#      UUID" step (ON CONFLICT DO NOTHING).
+#   2. Disable the local admin password so /api/auth/login can't bypass SSO —
+#      login is exclusively via Cloudflare Access OIDC (umami-sso). The password
+#      column is set to a non-bcrypt sentinel so every bcrypt.compare fails.
+#      umami-sso itself does NOT use the password (it mints sessions via
+#      APP_SECRET), so this doesn't lock out legitimate SSO login.
+#
+# NOTE: targets the Umami v2 postgres schema (website.website_id PK, "user"
+# table with user_id + username='admin' + password). Verify against the
+# running Umami version before relying on it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: umami-seed
+  namespace: platform
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: umami-seed
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: postgres:16-alpine
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              value: umami
+            - name: PGDATABASE
+              value: umami
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              echo "waiting for Umami admin user (migrations + first-run seed)..."
+              until psql -tAc "SELECT 1 FROM \"user\" WHERE username='admin' LIMIT 1" | grep -q 1; do
+                sleep 5
+              done
+
+              echo "seeding websites..."
+              psql -v ON_ERROR_STOP=1 <<'SQL'
+              INSERT INTO website (website_id, name, domain, user_id, created_at)
+              SELECT x.id::uuid, x.name, x.domain, u.user_id, now()
+              FROM (VALUES
+                ('98ea5337-62f5-44cd-bdb8-5f5265220b9f', 'unum-hash',      'hash.riddellious.dev'),
+                ('83dc9af4-92b1-4fcc-9fa3-c7d99de3493e', 'unum-json',      'json.riddellious.dev'),
+                ('8aed578e-9832-447c-bd60-598dee8b95d0', 'unum-diff',      'diff.riddellious.dev'),
+                ('fe5610fc-4418-44f7-b54a-0d49e09ba7a3', 'unum-diagram',   'diagram.riddellious.dev'),
+                ('a49eacf3-ac14-46ee-9c60-5225a7744e5f', 'fiatlux-kosmos', 'kosmos.riddellious.dev')
+              ) AS x(id, name, domain)
+              CROSS JOIN (SELECT user_id FROM "user" WHERE username = 'admin' LIMIT 1) u
+              ON CONFLICT (website_id) DO NOTHING;
+              SQL
+
+              echo "disabling local admin password (SSO-only via Cloudflare Access)..."
+              # Non-bcrypt sentinel → every bcrypt.compare fails, so /api/auth/login
+              # cannot authenticate. umami-sso logs in via APP_SECRET, not password.
+              psql -v ON_ERROR_STOP=1 -c "UPDATE \"user\" SET password = 'sso-only-login-disabled' WHERE username = 'admin';"
+
+              echo "seed complete"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
