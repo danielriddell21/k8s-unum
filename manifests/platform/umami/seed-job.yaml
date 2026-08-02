@@ -3,14 +3,13 @@
 #   1. Insert fixed website UUIDs so the per-tool website IDs in the unum/fiatlux
 #      ConfigMaps resolve without any manual "create website in the UI + paste
 #      UUID" step (ON CONFLICT DO NOTHING).
-#   2. Set the admin password to the value in umami-secret (bcrypt hash written
-#      straight to the DB — Umami has no env/CLI for it). ENFORCED every sync, so
-#      umami-secret is the source of truth. Umami sits behind a Cloudflare Access
-#      self-hosted gate (identity), and this password is the second factor.
+# The admin password is NOT managed here — Umami ships with admin/umami and the
+# password is changed via the Umami UI. (Writing bcrypt hashes straight to the DB
+# coupled the Job to umami-secret and broke startup when the key was missing.)
 #
 # NOTE: targets the Umami v2 postgres schema (website.website_id PK, "user"
-# table with user_id + username='admin' + password bcrypt). Verify against the
-# running Umami version before relying on it.
+# table with user_id + username='admin'). Verify against the running Umami
+# version before relying on it.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -44,11 +43,6 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: password
-            - name: UMAMI_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: umami-secret
-                  key: umami-admin-password
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -72,12 +66,6 @@ spec:
               CROSS JOIN (SELECT user_id FROM "user" WHERE username = 'admin' LIMIT 1) u
               ON CONFLICT (website_id) DO NOTHING;
               SQL
-
-              echo "setting admin password from umami-secret..."
-              apk add --no-cache apache2-utils >/dev/null
-              # bcrypt hash (cost 10); strip htpasswd's ":" prefix, normalise $2y→$2b
-              HASH=$(htpasswd -bnBC 10 "" "$UMAMI_ADMIN_PASSWORD" | tr -d '\n' | sed 's/^[^$]*//; s/^\$2y/\$2b/')
-              psql -v ON_ERROR_STOP=1 -c "UPDATE \"user\" SET password = '$HASH' WHERE username = 'admin';"
 
               echo "seed complete"
           resources:

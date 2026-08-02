@@ -87,15 +87,12 @@ seal_umami() {
         read -rsp "  postgres password (from postgres-secret): " pg_pass
         echo
     fi
-    local app_secret admin_pass
+    local app_secret
     app_secret=$(rand_token)
-    admin_pass=$(rand_password)
     seal platform umami-secret platform/umami \
         --from-literal="database-url=postgresql://umami:${pg_pass}@postgres:5432/umami" \
-        --from-literal="app-secret=$app_secret" \
-        --from-literal="umami-admin-password=$admin_pass"
-    echo "  admin login: admin / $admin_pass"
-    echo "  (behind Cloudflare Access; enforced by the seed Job every sync)"
+        --from-literal="app-secret=$app_secret"
+    echo "  (admin login is Umami's default admin/umami — change it in the UI)"
 }
 
 seal_otel() {
@@ -138,7 +135,7 @@ options=(
     "cloudflared-fiatlux   fiatlux tunnel token (reads from Terraform state)"
     "cloudflared-platform  platform tunnel token (reads from Terraform state)"
     "postgres              database password (auto-generated, platform ns)"
-    "umami                 database-url + app-secret + admin password (platform ns)"
+    "umami                 database-url + app-secret (platform ns)"
     "otel-collector        auth token (auto-generated, copy to GitHub Actions)"
     "grafana               break-glass admin password + OIDC creds (platform ns)"
     "all                   create all secrets in order"

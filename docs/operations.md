@@ -50,10 +50,9 @@ break-glass admin (`grafana-secret`) works over a port-forward too, bypassing SS
 >   behind the tunnel with `access_email` mapped to `role:admin`.
 > - **Umami** has no usable SSO for Cloudflare Access (umami-sso requires an
 >   `end_session_endpoint` Cloudflare doesn't publish), so it's exposed with only
->   its own login. The admin password is a strong generated value in
->   `umami-secret`, set + enforced by the `umami-seed` Job every sync. This is the
->   one public login page — acceptable for a personal analytics panel, but one
->   layer less than Grafana/ArgoCD.
+>   its own login. It ships with the default `admin`/`umami` — **change the
+>   password in the Umami UI after first login**; it is not managed by the seed
+>   Job. This is the one public login page, so don't leave it on the default.
 > - **In-cluster caveat:** these protections cover the public path. Anything
 >   already inside the cluster can reach the Services directly; add NetworkPolicies
 >   if that matters for your threat model.
