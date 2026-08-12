@@ -1,0 +1,39 @@
+name: Pages
+
+# Publishes the static homepage in site/ to the Cloudflare Pages project created
+# by terraform/pages.tf. Terraform owns the project, DNS record and custom domain;
+# this workflow only uploads files, so terraform apply must have run once before
+# the first deploy here succeeds (wrangler will not create a missing project
+# non-interactively).
+#
+# CLOUDFLARE_API_TOKEN is the same secret the terraform workflow uses — it needs
+# "Account > Cloudflare Pages: Edit" added to it for this to work.
+
+on:
+  push:
+    branches: [trunk]
+    paths:
+      - site/**
+      - .github/workflows/pages.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=riddellious-dev --branch=trunk

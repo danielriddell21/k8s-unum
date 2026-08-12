@@ -60,6 +60,11 @@ output "argocd_oidc_issuer" {
 }
 
 
+output "homepage_pages_subdomain" {
+  description = "Cloudflare Pages hostname backing the homepage — the apex CNAME target, and the URL to hit when debugging the site with the custom domain bypassed"
+  value       = cloudflare_pages_project.homepage.subdomain
+}
+
 output "post_apply" {
   description = "Manual steps to complete after terraform apply"
   value       = <<-EOT

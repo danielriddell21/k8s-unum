@@ -46,3 +46,32 @@ resource "cloudflare_zero_trust_access_policy" "allow_owner" {
     email = [var.access_email]
   }
 }
+
+# The homepage's /admin page (Cloudflare Pages — see pages.tf). Unlike the two
+# apps above this is a plain self-hosted app, not OIDC: there is no relying party
+# to hand an identity to, just a static page that should not be public. Access
+# matches on path prefix, so this covers /admin and everything under it while the
+# rest of the apex stays open.
+#
+# This gates the *page listing* the admin links. Grafana/ArgoCD/Umami each still
+# authenticate on their own hostname — removing this app would expose the list,
+# not the services.
+resource "cloudflare_zero_trust_access_application" "admin" {
+  account_id       = var.cloudflare_account_id
+  name             = "homepage-admin"
+  type             = "self_hosted"
+  domain           = "${var.domain}/admin"
+  session_duration = "24h"
+}
+
+resource "cloudflare_zero_trust_access_policy" "allow_owner_admin" {
+  account_id     = var.cloudflare_account_id
+  application_id = cloudflare_zero_trust_access_application.admin.id
+  name           = "allow-owner-admin"
+  precedence     = 1
+  decision       = "allow"
+
+  include {
+    email = [var.access_email]
+  }
+}

@@ -5,6 +5,9 @@
 ```
 Internet
   └─→ Cloudflare DNS + WAF (free tier)
+        ├─→ Cloudflare Pages: riddellious.dev   (static homepage, no cluster)
+        │     ├─→ /            public tool index
+        │     └─→ /admin       Cloudflare Access (self-hosted app, owner only)
         ├─→ Cloudflare Tunnel: unum
         │     └─→ cloudflared pod (unum namespace)
         │           ├─→ unum-hash     :8080
@@ -23,6 +26,11 @@ Internet
 
 Hetzner K8s (Nuremberg) ← ArgoCD watches manifests/{unum,fiatlux,platform}/ on trunk
 ```
+
+The apex is the one hostname that is **not** a tunnel: `riddellious.dev` is a
+static site (`site/`) on Cloudflare Pages, so the homepage stays up even when the
+cluster is down, and costs the 8GB node nothing. Terraform owns the Pages project,
+the apex CNAME and the Access app on `/admin`; a GitHub Action uploads the files.
 
 Each namespace runs its own `cloudflared` pod connected to its own Cloudflare tunnel; the three tunnels share one VM and are provisioned by the same `cloudflare_tunnel` Terraform module. The four unum tools (`hash`/`json`/`diff`/`diagram`) run from the same image (`ghcr.io/danielriddell21/unum`) — the Deployment `args` field selects the tool. The shared observability + analytics stack (otel-collector, Prometheus, Loki, Tempo, Grafana, Umami, Postgres) lives in the **platform** namespace; only otel-collector is publicly exposed (via the platform tunnel).
 
@@ -44,6 +52,8 @@ Grafana ← Prometheus + Loki + Tempo   (public at grafana.${domain}, own login)
 Umami   ← JS snippet via /umami/* proxy on unum/fiatlux pods; websites seeded
           into Umami's Postgres by the umami-seed Job (no manual UI step)
           (admin UI public at umami.${domain}, own login)
+        ← homepage (Cloudflare Pages) loads script.js from umami.${domain}
+          directly — it is off-cluster, so there is no proxy to go through
 ```
 
 Grafana and ArgoCD are publicly exposed via the platform tunnel behind Cloudflare
@@ -57,6 +67,11 @@ namespace); consumers in `unum`/`fiatlux` reach it cross-namespace via
 
 ```
 riddellious-dev/
+  site/                       # static homepage → Cloudflare Pages (not ArgoCD)
+    index.html                # public index of tools + simulator
+    admin/index.html          # grafana/argocd/umami links, behind Access
+    style.css                 # shared by both pages
+    _headers                  # security headers (CSP allows only Umami)
   manifests/                  # one subdirectory per namespace
     unum/                     # watched by argocd/unum.yaml
       namespace.yaml
@@ -87,7 +102,8 @@ riddellious-dev/
     main.tf                   # providers + S3 backend
     hetzner.tf                # cx32 server + SSH key (k3s via cloud-init)
     cloudflare.tf             # three module calls (unum/fiatlux/platform) + moved blocks
-    access.tf                 # Cloudflare Access SaaS-OIDC apps (SSO for grafana/argocd/umami)
+    pages.tf                  # Pages project + apex CNAME + custom domain (homepage)
+    access.tf                 # Access SaaS-OIDC apps (grafana/argocd) + self-hosted /admin
     modules/cloudflare_tunnel/   # reusable: tunnel + config + per-hostname CNAME
     variables.tf
     outputs.tf
@@ -103,6 +119,7 @@ riddellious-dev/
       tf-plan-summary/        # composite action — writes plan to job summary
     workflows/
       terraform.yaml          # validate → plan → apply
+      pages.yaml              # wrangler upload of site/ on push to trunk
 ```
 
 ## Image tags

@@ -2,6 +2,8 @@
 
 Manifests for [unum](https://github.com/danielriddell21/unum) and the [fiat-lux](https://github.com/danielriddell21/fiat-lux) simulator, deployed on Hetzner k3s via ArgoCD and fronted by a Cloudflare Tunnel.
 
+The landing page at [riddellious.dev](https://riddellious.dev) — static files in [`site/`](site/), served from Cloudflare Pages — links to every deployed service. Its `/admin` page lists Grafana/ArgoCD/Umami and is gated by Cloudflare Access.
+
 ## Docs
 
 - [Architecture](docs/architecture.md)

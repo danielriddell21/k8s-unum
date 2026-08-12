@@ -25,6 +25,26 @@ argocd app sync platform
 
 To pin to a specific image tag, edit the `image:` field in the relevant `manifests/<namespace>/<tool>/deployment.yaml` and push.
 
+## Updating the homepage
+
+The homepage is static files in `site/` on Cloudflare Pages — ArgoCD is not
+involved. Edit and push to `trunk`; the `Pages` workflow uploads within a minute.
+Preview locally with any static server:
+
+```bash
+python3 -m http.server -d site 8000   # http://localhost:8000
+```
+
+Two things do not live in `site/`:
+
+- **Adding a link to a new service** is just HTML, but if it should appear on
+  `/admin` it also needs to actually be gated — the Access app in
+  `terraform/access.tf` covers the `/admin` page itself, not the service.
+- **Analytics** for the homepage use the `homepage` website UUID seeded by
+  `manifests/platform/umami/seed-job.yaml`. The UUID is hardcoded in
+  `site/index.html` (the site is off-cluster, so it can't read the ConfigMap the
+  unum pods use) — the two must stay in sync. `/admin` is deliberately untracked.
+
 ## Observability & control-plane access
 
 Grafana and ArgoCD authenticate through **Cloudflare Access (OIDC SSO)** — one
@@ -38,6 +58,7 @@ gated to `access_email` (one-time PIN); the Access apps live in `terraform/acces
 | Grafana | Cloudflare Access OIDC (auto-login) | https://grafana.riddellious.dev |
 | Umami | Umami's own admin login | https://umami.riddellious.dev |
 | ArgoCD | Cloudflare Access OIDC | https://argocd.riddellious.dev |
+| Admin index | Cloudflare Access (self-hosted app) | https://riddellious.dev/admin |
 
 `just argocd` still port-forwards to https://localhost:9090; the Grafana
 break-glass admin (`grafana-secret`) works over a port-forward too, bypassing SSO.
@@ -53,6 +74,10 @@ break-glass admin (`grafana-secret`) works over a port-forward too, bypassing SS
 >   its own login. It ships with the default `admin`/`umami` — **change the
 >   password in the Umami UI after first login**; it is not managed by the seed
 >   Job. This is the one public login page, so don't leave it on the default.
+> - **`/admin` on the homepage** is a link list, not a security boundary. The
+>   Access app in front of it keeps the page private, but each service behind
+>   those links still authenticates on its own hostname — that is what actually
+>   protects them.
 > - **In-cluster caveat:** these protections cover the public path. Anything
 >   already inside the cluster can reach the Services directly; add NetworkPolicies
 >   if that matters for your threat model.

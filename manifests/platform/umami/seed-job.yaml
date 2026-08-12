@@ -2,7 +2,9 @@
 # idempotent so re-running is safe:
 #   1. Insert fixed website UUIDs so the per-tool website IDs in the unum/fiatlux
 #      ConfigMaps resolve without any manual "create website in the UI + paste
-#      UUID" step (ON CONFLICT DO NOTHING).
+#      UUID" step (ON CONFLICT DO NOTHING). The 'homepage' row is the exception:
+#      that site is on Cloudflare Pages, not in the cluster, so its UUID is
+#      hardcoded in site/index.html rather than read from a ConfigMap.
 # The admin password is NOT managed here — Umami ships with admin/umami and the
 # password is changed via the Umami UI. (Writing bcrypt hashes straight to the DB
 # coupled the Job to umami-secret and broke startup when the key was missing.)
@@ -61,7 +63,8 @@ spec:
                 ('83dc9af4-92b1-4fcc-9fa3-c7d99de3493e', 'unum-json',      'json.riddellious.dev'),
                 ('8aed578e-9832-447c-bd60-598dee8b95d0', 'unum-diff',      'diff.riddellious.dev'),
                 ('fe5610fc-4418-44f7-b54a-0d49e09ba7a3', 'unum-diagram',   'diagram.riddellious.dev'),
-                ('a49eacf3-ac14-46ee-9c60-5225a7744e5f', 'fiatlux-kosmos', 'kosmos.riddellious.dev')
+                ('a49eacf3-ac14-46ee-9c60-5225a7744e5f', 'fiatlux-kosmos', 'kosmos.riddellious.dev'),
+                ('83663084-75bb-41ee-af63-ec99ff218c5b', 'homepage',       'riddellious.dev')
               ) AS x(id, name, domain)
               CROSS JOIN (SELECT user_id FROM "user" WHERE username = 'admin' LIMIT 1) u
               ON CONFLICT (website_id) DO NOTHING;

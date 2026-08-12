@@ -1,0 +1,90 @@
+:root {
+  --bg: #fbfbfa;
+  --fg: #1b1b1a;
+  --muted: #6b6b66;
+  --line: #e3e3df;
+  --card: #ffffff;
+  --accent: #2f6f5f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131313;
+    --fg: #e8e8e4;
+    --muted: #98988f;
+    --line: #2a2a28;
+    --card: #1a1a19;
+    --accent: #6fbfa5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 4rem 1.25rem 3rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+main { max-width: 46rem; margin: 0 auto; }
+
+header { margin-bottom: 2.5rem; }
+
+h1 {
+  margin: 0 0 .4rem;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+}
+
+header p { margin: 0; color: var(--muted); }
+
+h2 {
+  margin: 2.5rem 0 .9rem;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+
+a.card {
+  display: block;
+  padding: .9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+a.card:hover, a.card:focus-visible { border-color: var(--accent); transform: translateY(-1px); }
+a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.name { font-weight: 600; }
+.host { color: var(--muted); font-size: .85rem; margin-left: .5rem; word-break: break-all; }
+.desc { display: block; color: var(--muted); font-size: .9rem; margin-top: .15rem; }
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .875rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.25rem;
+}
+
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  a.card { transition: none; }
+  a.card:hover, a.card:focus-visible { transform: none; }
+}

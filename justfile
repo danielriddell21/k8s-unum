@@ -35,6 +35,10 @@ status:
 sync-status:
     KUBECONFIG={{ kubeconfig_path }} kubectl get applications -n argocd
 
+# Serve the static homepage locally at http://localhost:8000
+site:
+    python3 -m http.server -d site 8000
+
 # Create or rotate any sealed secret — interactive menu (requires kubeseal + cluster access)
 seal-secrets:
     bash scripts/seal-secrets.sh
