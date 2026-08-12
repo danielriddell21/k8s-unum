@@ -43,3 +43,50 @@ resource "cloudflare_pages_domain" "apex" {
 
   depends_on = [cloudflare_record.homepage_apex]
 }
+
+# www → apex, 301.
+#
+# www is deliberately NOT attached to the Pages project as a second custom
+# domain: the redirect rule below runs in the dynamic-redirect phase, at the
+# edge, before the request is ever routed to an origin, so Pages never sees it.
+# The record exists only to make the hostname resolve and be proxied — the
+# content it points at is never fetched. (Consequence: delete the rule and www
+# starts returning the Pages not-found page rather than the site.)
+resource "cloudflare_record" "homepage_www" {
+  zone_id = var.cloudflare_zone_id
+  name    = "www"
+  content = cloudflare_pages_project.homepage.subdomain
+  type    = "CNAME"
+  proxied = true
+  comment = "www → 301 to apex (see cloudflare_ruleset.www_redirect)"
+}
+
+# One ruleset per zone per phase — if a dynamic-redirect ruleset is ever created
+# by hand in the dashboard, this resource will collide with it and has to be
+# imported rather than created.
+resource "cloudflare_ruleset" "www_redirect" {
+  zone_id = var.cloudflare_zone_id
+  name    = "www to apex"
+  kind    = "zone"
+  phase   = "http_request_dynamic_redirect"
+
+  rules {
+    ref         = "www_to_apex"
+    description = "301 www.${var.domain} to ${var.domain}"
+    expression  = "(http.host eq \"www.${var.domain}\")"
+    action      = "redirect"
+
+    action_parameters {
+      from_value {
+        status_code           = 301
+        preserve_query_string = true
+
+        # Path is carried over so a deep link like www.../admin/ still lands in
+        # the right place; preserve_query_string handles the rest.
+        target_url {
+          expression = "concat(\"https://${var.domain}\", http.request.uri.path)"
+        }
+      }
+    }
+  }
+}

@@ -1,90 +1,187 @@
+/* riddellious.dev index.
+ *
+ * Family resemblance to the child sites, not a colour match — the children don't
+ * match each other either:
+ *
+ *   unum tools   #0D0D0D ground, cyan  #00D4FF accent, scanline overlay
+ *   kosmos       #0d1117 ground, amber #f9b042 accent
+ *
+ * What they share is the actual house style: dark, 13px monospace, hairline
+ * borders, flat panels, one saturated accent against muted body text, a header
+ * strip and a status bar. This page keeps all of that and takes violet as its
+ * own accent, so the index reads as the parent of the two rather than a copy of
+ * either. Ground sits between their two backgrounds.
+ *
+ * Dark only — kosmos has no light mode and the unum tools default to dark
+ * regardless of OS preference, so a light homepage would be the odd one out.
+ */
+
 :root {
-  --bg: #fbfbfa;
-  --fg: #1b1b1a;
-  --muted: #6b6b66;
-  --line: #e3e3df;
-  --card: #ffffff;
-  --accent: #2f6f5f;
+  --bg:        #0d1014;
+  --bg-panel:  #141821;
+  --bg-hover:  #1a1f2a;
+  --border:    #242a34;
+  --accent:    #bc8cff;
+  --text:      #d7dde3;
+  --muted:     #7b838d;
+  --faint:     #5c646e;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131313;
-    --fg: #e8e8e4;
-    --muted: #98988f;
-    --line: #2a2a28;
-    --card: #1a1a19;
-    --accent: #6fbfa5;
-  }
-}
-
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  margin: 0;
-  padding: 4rem 1.25rem 3rem;
   background: var(--bg);
-  color: var(--fg);
-  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-main { max-width: 46rem; margin: 0 auto; }
-
-header { margin-bottom: 2.5rem; }
-
-h1 {
-  margin: 0 0 .4rem;
-  font-size: 1.6rem;
-  letter-spacing: -.02em;
-}
-
-header p { margin: 0; color: var(--muted); }
-
-h2 {
-  margin: 2.5rem 0 .9rem;
-  font-size: .75rem;
-  font-weight: 600;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
-
-a.card {
-  display: block;
-  padding: .9rem 1.1rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  color: inherit;
-  text-decoration: none;
-  transition: border-color .15s ease, transform .15s ease;
-}
-
-a.card:hover, a.card:focus-visible { border-color: var(--accent); transform: translateY(-1px); }
-a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.name { font-weight: 600; }
-.host { color: var(--muted); font-size: .85rem; margin-left: .5rem; word-break: break-all; }
-.desc { display: block; color: var(--muted); font-size: .9rem; margin-top: .15rem; }
-
-footer {
-  margin-top: 3rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: .875rem;
+  color: var(--text);
+  font-family: ui-monospace, 'JetBrains Mono', SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Code', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  height: 100vh;
   display: flex;
-  flex-wrap: wrap;
-  gap: .5rem 1.25rem;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-footer a { color: var(--accent); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
+/* Scanline overlay — borrowed from unum's shared.css. Subtle enough to read as
+   texture rather than a theme, which is what makes it a family tell. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+#header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+}
+
+.brand {
+  color: var(--accent);
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.hdr-tool {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────────────── */
+
+/* Header and status bar stay pinned, the list scrolls between them — same shell
+   as the tools, so the admin link never drops below the fold. */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 24px;
+}
+
+.section, .hint { max-width: 760px; }
+
+.section + .section { margin-top: 28px; }
+
+.section-title {
+  color: var(--accent);
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* minmax(0, 1fr) rather than a bare auto column: an auto track floors at the
+   widest item's min-content and overflows a narrow viewport instead of wrapping. */
+.entries {
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.entry {
+  display: block;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.entry:hover, .entry:focus-visible {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.entry-name { color: var(--accent); font-weight: bold; }
+
+.entry-host {
+  color: var(--faint);
+  font-size: 12px;
+  margin-left: 10px;
+  word-break: break-all;
+}
+
+.entry-desc {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 1px;
+}
+
+.hint { color: var(--faint); font-size: 12px; margin-top: 20px; }
+
+/* ── Status bar ─────────────────────────────────────────────────────────────── */
+
+#status-bar {
+  padding: 5px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  flex-shrink: 0;
+  color: var(--faint);
+}
+
+#status-bar a { color: var(--muted); text-decoration: none; }
+#status-bar a:hover { color: var(--accent); }
+.status-spacer { flex: 1; }
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
-  a.card { transition: none; }
-  a.card:hover, a.card:focus-visible { transform: none; }
+  .entry { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .main { padding: 20px 16px; }
+  .entry-host { display: block; margin-left: 0; }
 }

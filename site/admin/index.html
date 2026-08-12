@@ -1,46 +1,55 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin &middot; riddellious.dev</title>
-<meta name="robots" content="noindex">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>&#9671;</text></svg>">
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>riddellious.dev &mdash; admin</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>&#9671;</text></svg>" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-<main>
-  <header>
-    <h1>Admin</h1>
-    <p>Platform services. This page is gated by Cloudflare Access; each service authenticates again on its own.</p>
-  </header>
 
-  <h2>Services</h2>
-  <ul>
-    <li>
-      <a class="card" href="https://grafana.riddellious.dev">
-        <span class="name">Grafana</span><span class="host">grafana.riddellious.dev</span>
-        <span class="desc">Metrics, logs and traces (Prometheus + Loki + Tempo). Cloudflare Access OIDC.</span>
-      </a>
-    </li>
-    <li>
-      <a class="card" href="https://argocd.riddellious.dev">
-        <span class="name">ArgoCD</span><span class="host">argocd.riddellious.dev</span>
-        <span class="desc">GitOps sync state for the unum, fiatlux and platform apps. Cloudflare Access OIDC.</span>
-      </a>
-    </li>
-    <li>
-      <a class="card" href="https://umami.riddellious.dev">
-        <span class="name">Umami</span><span class="host">umami.riddellious.dev</span>
-        <span class="desc">Web analytics for the tools and this site. Umami's own login.</span>
-      </a>
-    </li>
-  </ul>
+  <div id="header">
+    <span class="brand">[ RIDDELLIOUS ]</span>
+    <span class="hdr-tool">admin</span>
+  </div>
 
-  <footer>
-    <a href="/">&larr; riddellious.dev</a>
-    <a href="https://github.com/danielriddell21/riddellious-dev">riddellious-dev</a>
-  </footer>
-</main>
+  <div class="main">
+
+    <section class="section">
+      <div class="section-title">platform</div>
+      <ul class="entries">
+        <li>
+          <a class="entry" href="https://grafana.riddellious.dev">
+            <span class="entry-name">grafana</span><span class="entry-host">grafana.riddellious.dev</span>
+            <span class="entry-desc">metrics, logs and traces &mdash; prometheus + loki + tempo &middot; access oidc</span>
+          </a>
+        </li>
+        <li>
+          <a class="entry" href="https://argocd.riddellious.dev">
+            <span class="entry-name">argocd</span><span class="entry-host">argocd.riddellious.dev</span>
+            <span class="entry-desc">gitops sync state for unum, fiatlux and platform &middot; access oidc</span>
+          </a>
+        </li>
+        <li>
+          <a class="entry" href="https://umami.riddellious.dev">
+            <span class="entry-name">umami</span><span class="entry-host">umami.riddellious.dev</span>
+            <span class="entry-desc">web analytics for the tools and this site &middot; umami's own login</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <div class="hint">this page is gated by cloudflare access; each service authenticates again on its own</div>
+
+  </div>
+
+  <div id="status-bar">
+    <span><a href="/">&larr; index</a></span>
+    <span class="status-spacer"></span>
+    <span><a href="https://github.com/danielriddell21/riddellious-dev">riddellious-dev</a></span>
+  </div>
+
 </body>
 </html>

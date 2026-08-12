@@ -1,67 +1,75 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>riddellious.dev</title>
-<meta name="description" content="Small web tools and a world simulator, self-hosted on a k3s cluster.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>&#9671;</text></svg>">
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>riddellious.dev</title>
+  <meta name="description" content="Small web tools and a world simulator." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>&#9671;</text></svg>" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-<main>
-  <header>
-    <h1>riddellious.dev</h1>
-    <p>Small web tools and a world simulator, self-hosted on a k3s cluster.</p>
-  </header>
 
-  <h2>Tools</h2>
-  <ul>
-    <li>
-      <a class="card" href="https://hash.riddellious.dev">
-        <span class="name">hash</span><span class="host">hash.riddellious.dev</span>
-        <span class="desc">Hash and checksum text and files.</span>
-      </a>
-    </li>
-    <li>
-      <a class="card" href="https://json.riddellious.dev">
-        <span class="name">json</span><span class="host">json.riddellious.dev</span>
-        <span class="desc">Format, validate and inspect JSON.</span>
-      </a>
-    </li>
-    <li>
-      <a class="card" href="https://diff.riddellious.dev">
-        <span class="name">diff</span><span class="host">diff.riddellious.dev</span>
-        <span class="desc">Compare two blocks of text side by side.</span>
-      </a>
-    </li>
-    <li>
-      <a class="card" href="https://diagram.riddellious.dev">
-        <span class="name">diagram</span><span class="host">diagram.riddellious.dev</span>
-        <span class="desc">Render diagrams from plain text.</span>
-      </a>
-    </li>
-  </ul>
+  <div id="header">
+    <span class="brand">[ RIDDELLIOUS ]</span>
+    <span class="hdr-tool">index</span>
+  </div>
 
-  <h2>Simulator</h2>
-  <ul>
-    <li>
-      <a class="card" href="https://kosmos.riddellious.dev">
-        <span class="name">kosmos</span><span class="host">kosmos.riddellious.dev</span>
-        <span class="desc">fiat-lux &mdash; a small simulated world you can watch run.</span>
-      </a>
-    </li>
-  </ul>
+  <div class="main">
 
-  <footer>
-    <a href="/admin/">Admin</a>
-    <a href="https://github.com/danielriddell21/unum">unum</a>
-    <a href="https://github.com/danielriddell21/fiat-lux">fiat-lux</a>
-  </footer>
-</main>
-<!-- Umami website id 'homepage' — seeded by manifests/platform/umami/seed-job.yaml.
-     This site is off-cluster (Cloudflare Pages), so it reports to the public Umami
-     host directly rather than through the /umami/* proxy the unum pods use. -->
-<script defer src="https://umami.riddellious.dev/script.js" data-website-id="83663084-75bb-41ee-af63-ec99ff218c5b"></script>
+    <section class="section">
+      <div class="section-title">tools</div>
+      <ul class="entries">
+        <li>
+          <a class="entry" href="https://hash.riddellious.dev">
+            <span class="entry-name">hash</span><span class="entry-host">hash.riddellious.dev</span>
+            <span class="entry-desc">derive hashes from any text</span>
+          </a>
+        </li>
+        <li>
+          <a class="entry" href="https://json.riddellious.dev">
+            <span class="entry-name">json</span><span class="entry-host">json.riddellious.dev</span>
+            <span class="entry-desc">explore, search and query json</span>
+          </a>
+        </li>
+        <li>
+          <a class="entry" href="https://diff.riddellious.dev">
+            <span class="entry-name">diff</span><span class="entry-host">diff.riddellious.dev</span>
+            <span class="entry-desc">compare two texts, split or unified</span>
+          </a>
+        </li>
+        <li>
+          <a class="entry" href="https://diagram.riddellious.dev">
+            <span class="entry-name">diagram</span><span class="entry-host">diagram.riddellious.dev</span>
+            <span class="entry-desc">render d2 and mermaid to svg, png or drawio</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <div class="section-title">simulator</div>
+      <ul class="entries">
+        <li>
+          <a class="entry" href="https://kosmos.riddellious.dev">
+            <span class="entry-name">kosmos</span><span class="entry-host">kosmos.riddellious.dev</span>
+            <span class="entry-desc">fiat-lux &mdash; a small simulated world you can watch run</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+  </div>
+
+  <div id="status-bar">
+    <span><a href="/admin/">admin</a></span>
+    <span class="status-spacer"></span>
+    <span><a href="https://github.com/danielriddell21/unum">unum</a> &middot; <a href="https://github.com/danielriddell21/fiat-lux">fiat-lux</a></span>
+  </div>
+
+  <!-- Umami website id 'homepage' — seeded by manifests/platform/umami/seed-job.yaml.
+       This site is off-cluster (Cloudflare Pages), so it reports to the public Umami
+       host directly rather than through the /umami/* proxy the unum pods use. -->
+  <script defer src="https://umami.riddellious.dev/script.js" data-website-id="83663084-75bb-41ee-af63-ec99ff218c5b"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # Cloudflare Pages response headers.
-# The only third-party origin the site talks to is Umami (script + /api/send),
-# so everything else is locked down.
+# The page ships no JavaScript of its own — the only third-party origin it talks
+# to is Umami (script + /api/send), so everything else is locked down.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
