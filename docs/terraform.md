@@ -71,7 +71,7 @@ Create two environments under **Settings → Environments**:
 |---|---|
 | `HETZNER_TOKEN` | Hetzner Cloud API token |
 | `SSH_PUBLIC_KEY` | SSH public key (placed on server at provision time) |
-| `CLOUDFLARE_API_TOKEN` | Zone:DNS:Edit + Account:Cloudflare Tunnel:Edit + Account:Access: Apps and Policies:Edit + Account:Cloudflare Pages:Edit |
+| `CLOUDFLARE_API_TOKEN` | Zone:DNS:Edit + Zone:Single Redirect:Edit + Account:Cloudflare Tunnel:Edit + Account:Access: Apps and Policies:Edit + Account:Cloudflare Pages:Edit |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare zone ID for the domain |
 

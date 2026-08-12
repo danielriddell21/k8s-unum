@@ -61,6 +61,13 @@ resource "cloudflare_record" "homepage_www" {
   comment = "www → 301 to apex (see cloudflare_ruleset.www_redirect)"
 }
 
+# Needs "Zone > Single Redirect: Edit" on var.cloudflare_api_token (the Cloudflare
+# dashboard used to call this permission "Dynamic Redirect") — a separate
+# scope from Zone:DNS:Edit, which only covers the record above. Without it this
+# resource fails with a bare `Authentication error (10000)` while every other
+# resource in the same apply succeeds, leaving www resolving with nothing to
+# redirect it (a 522, since the hostname is not a Pages custom domain).
+#
 # One ruleset per zone per phase — if a dynamic-redirect ruleset is ever created
 # by hand in the dashboard, this resource will collide with it and has to be
 # imported rather than created.
