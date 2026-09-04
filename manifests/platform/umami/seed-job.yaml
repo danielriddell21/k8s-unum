@@ -63,6 +63,7 @@ spec:
                 ('83dc9af4-92b1-4fcc-9fa3-c7d99de3493e', 'unum-json',      'json.riddellious.dev'),
                 ('8aed578e-9832-447c-bd60-598dee8b95d0', 'unum-diff',      'diff.riddellious.dev'),
                 ('fe5610fc-4418-44f7-b54a-0d49e09ba7a3', 'unum-diagram',   'diagram.riddellious.dev'),
+                ('a439d19e-72dd-4fc7-a13c-58f1073ea6a2', 'unum-image',     'image.riddellious.dev'),
                 ('a49eacf3-ac14-46ee-9c60-5225a7744e5f', 'fiatlux-kosmos', 'kosmos.riddellious.dev'),
                 ('83663084-75bb-41ee-af63-ec99ff218c5b', 'homepage',       'riddellious.dev')
               ) AS x(id, name, domain)
