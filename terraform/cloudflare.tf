@@ -9,6 +9,7 @@ module "tunnel_unum" {
     { hostname = "json.${var.domain}", service = "http://unum-json:8080" },
     { hostname = "diff.${var.domain}", service = "http://unum-diff:8080" },
     { hostname = "diagram.${var.domain}", service = "http://unum-diagram:8080" },
+    { hostname = "image.${var.domain}", service = "http://unum-image:8080" },
   ]
 }
 
