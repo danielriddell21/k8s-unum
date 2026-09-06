@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unum-image
+  namespace: unum
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: unum-image
+  template:
+    metadata:
+      labels:
+        app: unum-image
+    spec:
+      containers:
+        - name: unum-image
+          image: ghcr.io/danielriddell21/unum:v1.8.1
+          args: ["image", "--web"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: XDG_CONFIG_HOME
+              value: /etc
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.platform:4319"
+            - name: OTEL_SERVICE_NAME
+              value: "unum-image"
+            - name: UNUM_ENV
+              value: "production"
+            - name: UMAMI_URL
+              value: "http://umami.platform:3000"
+            - name: UMAMI_WEBSITE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: umami-config
+                  key: image_website_id
+            - name: UMAMI_HOSTNAME
+              value: "image.riddellious.dev"
+          volumeMounts:
+            - name: unum-config
+              mountPath: /etc/unum
+              readOnly: true
+          # Unlike the other unum tools, this one holds whole decoded bitmaps in
+          # memory: a 50 megapixel upload is ~200MB of RGBA, plus a resampled
+          # copy, and the quality ladder encodes eight rungs in parallel. CPU is
+          # likewise real work rather than string formatting.
+          # optimize.MaxPixels is what bounds the top end.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+      volumes:
+        - name: unum-config
+          configMap:
+            name: unum-config
